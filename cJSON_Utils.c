@@ -178,7 +178,7 @@ static int cJSONUtils_ApplyPatch(cJSON *object,cJSON *patch)
 		value=cJSON_Duplicate(value,1);
 		if (!value) return 8; /* out of memory for add/replace. */
 	}
-		
+
 	/* Now, just add "value" to "path". */
 
 	parentptr=strdup(path->valuestring);	childptr=strrchr(parentptr,'/');	if (childptr) *childptr++=0;
@@ -236,15 +236,15 @@ void cJSONUtils_AddPatchToArray(cJSON *array,const char *op,const char *path,cJS
 static void cJSONUtils_CompareToPatch(cJSON *patches,const char *path,cJSON *from,cJSON *to)
 {
 	if (from->type!=to->type)	{cJSONUtils_GeneratePatch(patches,"replace",path,0,to);	return;	}
-	
+
 	switch (from->type)
 	{
-	case cJSON_Number:	
+	case cJSON_Number:
 		if (from->valueint!=to->valueint || from->valuedouble!=to->valuedouble)
 			cJSONUtils_GeneratePatch(patches,"replace",path,0,to);
 		return;
-						
-	case cJSON_String:	
+
+	case cJSON_String:
 		if (strcmp(from->valuestring,to->valuestring)!=0)
 			cJSONUtils_GeneratePatch(patches,"replace",path,0,to);
 		return;
@@ -266,7 +266,7 @@ static void cJSONUtils_CompareToPatch(cJSON *patches,const char *path,cJSON *fro
 		cJSON *a,*b;
 		cJSONUtils_SortObject(from);
 		cJSONUtils_SortObject(to);
-		
+
 		a=from->child,b=to->child;
 		while (a || b)
 		{
@@ -293,7 +293,7 @@ static void cJSONUtils_CompareToPatch(cJSON *patches,const char *path,cJSON *fro
 
 cJSON* cJSONUtils_GeneratePatches(cJSON *from,cJSON *to)
 {
-	cJSON *patches=cJSON_CreateArray();	
+	cJSON *patches=cJSON_CreateArray();
 	cJSONUtils_CompareToPatch(patches,"",from,to);
 	return patches;
 }
@@ -304,7 +304,7 @@ static cJSON *cJSONUtils_SortList(cJSON *list)
 	cJSON *first=list,*second=list,*ptr=list;
 
 	if (!list || !list->next) return list;	/* One entry is sorted already. */
-	
+
 	while (ptr && ptr->next && cJSONUtils_strcasecmp(ptr->string,ptr->next->string)<0) ptr=ptr->next;	/* Test for list sorted. */
 	if (!ptr || !ptr->next) return list;	/* Leave sorted lists unmodified. */
 	ptr=list;
@@ -317,14 +317,14 @@ static cJSON *cJSONUtils_SortList(cJSON *list)
 	list=ptr=0;
 
 	while (first && second)	/* Merge the sub-lists */
-	{		
+	{
 		if (cJSONUtils_strcasecmp(first->string,second->string)<0)
 		{
 			if (!list) list=ptr=first;
 			else	{ptr->next=first;first->prev=ptr;ptr=first;}
 			first=first->next;
 		}
-		else 
+		else
 		{
 			if (!list) list=ptr=second;
 			else	{ptr->next=second;second->prev=ptr;ptr=second;}

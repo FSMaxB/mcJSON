@@ -20,9 +20,9 @@ int main()
 		"\" \": 7,"
 		"\"m~n\": 8"
 	"}";
-   
+
 	const char *tests[12]={"","/foo","/foo/0","/","/a~1b","/c%d","/e^f","/g|h","/i\\j","/k\"l","/ ","/m~0n"};
-   
+
 	/* JSON Apply Patch tests: */
 	const char *patches[15][3]={
 	{"{ \"foo\": \"bar\"}", "[{ \"op\": \"add\", \"path\": \"/baz\", \"value\": \"qux\" }]","{\"baz\": \"qux\",\"foo\": \"bar\"}"},
@@ -105,5 +105,5 @@ int main()
 	cJSONUtils_SortObject(sortme);
 	after=cJSON_PrintUnformatted(sortme);
 	printf("Before: [%s]\nAfter: [%s]\n\n",before,after);
-	free(before);free(after);cJSON_Delete(sortme);		
+	free(before);free(after);cJSON_Delete(sortme);
 }
