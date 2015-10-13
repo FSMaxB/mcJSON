@@ -10,6 +10,8 @@ target_link_libraries(cjson m)
 add_library(cjson-utils cJSON_Utils)
 target_link_libraries(cjson-utils cjson)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra")
+
 #check for valgrind
 find_program(MEMORYCHECK_COMMAND valgrind)
 set(MEMORYCHECK_COMMAND_OPTIONS --trace-children=yes --leak-check=full --error-exitcode=10)
