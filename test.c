@@ -47,7 +47,7 @@ void dofile(char *filename)
 
 	size_t unused __attribute__((unused));
 	f=fopen(filename,"rb");fseek(f,0,SEEK_END);len=ftell(f);fseek(f,0,SEEK_SET);
-	data=(char*)malloc(len+1);unused = fread(data,1,len,f);fclose(f);
+	data=(char*)malloc(len+1);unused = fread(data,1,len,f);data[len]='\0';fclose(f);
 	doit(data);
 	free(data);
 }
