@@ -136,7 +136,7 @@ void create_objects()
 	out=cJSON_Print(root);	cJSON_Delete(root);	printf("%s\n",out);	free(out);
 }
 
-int main (int argc, const char * argv[]) {
+int main (void) {
 	/* a bunch of json: */
 	char text1[]="{\n\"name\": \"Jack (\\\"Bee\\\") Nimble\", \n\"format\": {\"type\":       \"rect\", \n\"width\":      1920, \n\"height\":     1080, \n\"interlace\":  false,\"frame rate\": 24\n}\n}";
 	char text2[]="[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
