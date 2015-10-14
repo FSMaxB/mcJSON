@@ -108,7 +108,16 @@ static cJSON *cJSONUtils_PatchDetach(cJSON *object,const char *path)
 
 	parentptr = malloc(strlen(path) + 1);
 	strcpy(parentptr, path);
-	childptr=strrchr(parentptr,'/');	if (childptr) *childptr++=0;
+	childptr=strrchr(parentptr,'/');
+	if (childptr)
+	{
+		*childptr++=0;
+	}
+	else
+	{
+		free(parentptr);
+		return ret;
+	}
 	parent=cJSONUtils_GetPointer(object,parentptr);
 	cJSONUtils_InplaceDecodePointerString(childptr);
 
