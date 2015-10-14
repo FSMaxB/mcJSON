@@ -196,12 +196,13 @@ static const char *parse_string(cJSON *item,const char *str)
 	if (*str!='\"') {ep=str;return 0;}	/* not a string! */
 
 	while (*ptr!='\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	/* Skip escaped quotes. */
+	const char * end_ptr = ptr;
 
 	out=(char*)cJSON_malloc(len+1);	/* This is how long we need for the string, roughly. */
 	if (!out) return 0;
 
 	ptr=str+1;ptr2=out;
-	while (*ptr!='\"' && *ptr)
+	while (*ptr!='\"' && *ptr && ptr <= end_ptr)
 	{
 		if (*ptr!='\\') *ptr2++=*ptr++;
 		else
