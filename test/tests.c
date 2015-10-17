@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "cJSON.h"
+#include "../cJSON.h"
 
 /* Parse text to JSON, then render back to text, and print! */
 void doit(char *text)
