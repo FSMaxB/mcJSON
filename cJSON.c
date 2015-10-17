@@ -1249,7 +1249,9 @@ cJSON *cJSON_DetachItemFromArray(cJSON *array, int which) {
 	c->prev = 0;
 	return c;
 }
-void   cJSON_DeleteItemFromArray(cJSON *array,int which)			{cJSON_Delete(cJSON_DetachItemFromArray(array,which));}
+void cJSON_DeleteItemFromArray(cJSON *array, int which) {
+	cJSON_Delete(cJSON_DetachItemFromArray(array, which));
+}
 cJSON *cJSON_DetachItemFromObject(cJSON *object,const char *string) {int i=0;cJSON *c=object->child;while (c && cJSON_strcasecmp(c->string,string)) i++,c=c->next;if (c) return cJSON_DetachItemFromArray(object,i);return 0;}
 void   cJSON_DeleteItemFromObject(cJSON *object,const char *string) {cJSON_Delete(cJSON_DetachItemFromObject(object,string));}
 
