@@ -422,21 +422,21 @@ static char *print_string_ptr(const char *str, printbuffer *p) {
 	for (ptr = str; *ptr; ptr++) {
 		flag |= (((*ptr > 0) && (*ptr < 32)) || (*ptr == '\"') || (*ptr == '\\')) ? 1 : 0;
 	}
-static char *print_string_ptr(const char *str,printbuffer *p)
-{
-	const char *ptr;char *ptr2,*out;int len=0,flag=0;unsigned char token;
-
-	for (ptr=str;*ptr;ptr++) flag|=((*ptr>0 && *ptr<32)||(*ptr=='\"')||(*ptr=='\\'))?1:0;
-	if (!flag)
-	{
-		len=ptr-str;
-		if (p) out=ensure(p,len+3);
-		else		out=(char*)cJSON_malloc(len+3);
-		if (!out) return 0;
-		ptr2=out;*ptr2++='\"';
-		strcpy(ptr2,str);
-		ptr2[len]='\"';
-		ptr2[len+1]=0;
+	if (!flag) {
+		len = ptr - str;
+		if (p) {
+			out = ensure(p, len + 3);
+		} else {
+			out = (char*)cJSON_malloc(len + 3);
+		}
+		if (!out) {
+			return 0;
+		}
+		ptr2 = out;
+		*ptr2++ = '\"';
+		strcpy(ptr2, str);
+		ptr2[len] = '\"';
+		ptr2[len + 1] = 0;
 		return out;
 	}
 
