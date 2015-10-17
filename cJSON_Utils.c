@@ -127,11 +127,18 @@ cJSON *cJSONUtils_GetPointer(cJSON *object, const char *pointer) {
 }
 
 /* JSON Patch implementation. */
-static void cJSONUtils_InplaceDecodePointerString(char *string)
-{
-	char *s2=string;
-	for (;*string;s2++,string++) *s2=(*string!='~')?(*string):((*(++string)=='0')?'~':'/');
-	*s2=0;
+static void cJSONUtils_InplaceDecodePointerString(char *string) {
+	char *s2 = string;
+	for (; *string; s2++, string++) {
+		if (*string != '~') {
+			*s2 = *string;
+		} else if (*(++string) == '0') {
+			*s2 = '~';
+		} else {
+			*s2 = '/';
+		}
+	}
+	*s2 = 0;
 }
 
 static cJSON *cJSONUtils_PatchDetach(cJSON *object,const char *path)
