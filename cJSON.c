@@ -56,14 +56,15 @@ static int cJSON_strcasecmp(const char *s1,const char *s2) {
 static void *(*cJSON_malloc)(size_t sz) = malloc;
 static void (*cJSON_free)(void *ptr) = free;
 
-static char* cJSON_strdup(const char* str)
-{
+static char* cJSON_strdup(const char* str) {
 	size_t len;
 	char* copy;
 
 	len = strlen(str) + 1;
-	if (!(copy = (char*)cJSON_malloc(len))) return 0;
-	memcpy(copy,str,len);
+	if (!(copy = (char*)cJSON_malloc(len))) {
+		return 0;
+	}
+	memcpy(copy, str, len);
 	return copy;
 }
 
