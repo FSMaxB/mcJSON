@@ -1158,7 +1158,13 @@ cJSON *cJSON_GetArrayItem(cJSON *array, int item) {
 	}
 	return c;
 }
-cJSON *cJSON_GetObjectItem(cJSON *object,const char *string)	{cJSON *c=object->child; while (c && cJSON_strcasecmp(c->string,string)) c=c->next; return c;}
+cJSON *cJSON_GetObjectItem(cJSON *object, const char *string) {
+	cJSON *c = object->child;
+	while (c && cJSON_strcasecmp(c->string, string)) {
+		c = c->next;
+	}
+	return c;
+}
 
 /* Utility for array list handling. */
 static void suffix_object(cJSON *prev,cJSON *item) {prev->next=item;item->prev=prev;}
