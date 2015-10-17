@@ -106,24 +106,52 @@ void cJSON_Delete(cJSON *c) {
 }
 
 /* Parse the input text to generate a number, and populate the result into item. */
-static const char *parse_number(cJSON *item,const char *num)
-{
-	double n=0,sign=1,scale=0;int subscale=0,signsubscale=1;
+static const char *parse_number(cJSON *item,const char *num) {
+	double n = 0;
+	double sign = 1;
+	double scale = 0;
+	int subscale = 0;
+	int signsubscale = 1;
 
-	if (*num=='-') sign=-1,num++;	/* Has sign? */
-	if (*num=='0') num++;			/* is zero */
-	if (*num>='1' && *num<='9')	do	n=(n*10.0)+(*num++ -'0');	while (*num>='0' && *num<='9');	/* Number? */
-	if (*num=='.' && num[1]>='0' && num[1]<='9') {num++;		do	n=(n*10.0)+(*num++ -'0'),scale--; while (*num>='0' && *num<='9');}	/* Fractional part? */
-	if (*num=='e' || *num=='E')		/* Exponent? */
-	{	num++;if (*num=='+') num++;	else if (*num=='-') signsubscale=-1,num++;		/* With sign? */
-		while (*num>='0' && *num<='9') subscale=(subscale*10)+(*num++ - '0');	/* Number? */
+	if (*num == '-') { /* Has sign? */
+		sign = -1;
+		num++;
+	}
+	//TODO Only one zero?
+	if (*num == '0') { /* is zero */
+		num++;
+	}
+	if ((*num >= '1') && (*num <= '9')) { /* Number? */
+		do {
+			n = (n * 10.0) + (*num++ - '0');
+		} while ((*num >= '0') && (*num <= '9'));
+	}
+	if ((*num == '.') && (num[1] >= '0') && (num[1] <= '9')) { /* Fractional part? */
+		num++;
+		do {
+			n = (n * 10.0) + (*num++ - '0');
+			scale--;
+		} while ((*num >= '0') && (*num <= '9'));
+	}
+	if ((*num == 'e') || (*num == 'E')) { /* Exponent? */
+		num++;
+		/* With sign? */
+		if (*num == '+') {
+			num++;
+		} else if (*num == '-') {
+			signsubscale = -1;
+			num++;
+		}
+		while ((*num >= '0') && (*num <= '9')) { /* Number? */
+			subscale = (subscale * 10) + (*num++ - '0');
+		}
 	}
 
-	n=sign*n*pow(10.0,(scale+subscale*signsubscale));	/* number = +/- number.fraction * 10^+/- exponent */
+	n = sign * n * pow(10.0, (scale + subscale * signsubscale)); /* number = +/- number.fraction * 10^+/- exponent */
 
-	item->valuedouble=n;
-	item->valueint=(int)n;
-	item->type=cJSON_Number;
+	item->valuedouble = n;
+	item->valueint = (int)n;
+	item->type = cJSON_Number;
 	return num;
 }
 
