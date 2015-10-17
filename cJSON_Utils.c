@@ -511,6 +511,6 @@ static cJSON *cJSONUtils_SortList(cJSON *list) {
 	return list;
 }
 
-void cJSONUtils_SortObject(cJSON *object)	{object->child=cJSONUtils_SortList(object->child);}
-
-
+void cJSONUtils_SortObject(cJSON *object) {
+	object->child = cJSONUtils_SortList(object->child);
+}
