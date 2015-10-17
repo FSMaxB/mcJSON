@@ -5,10 +5,10 @@
 #include "cJSON_Utils.h"
 
 static int cJSONUtils_strcasecmp(const char *s1, const char *s2) {
-	if (!s1) {
+	if (s1 == NULL) {
 		return (s1 == s2) ? 0 : 1;
 	}
-	if (!s2) {
+	if (s2 == NULL) {
 		return 1;
 	}
 	for (; tolower(*s1) == tolower(*s2); ++s1, ++s2) {
@@ -21,8 +21,8 @@ static int cJSONUtils_strcasecmp(const char *s1, const char *s2) {
 
 /* JSON Pointer implementation: */
 static int cJSONUtils_Pstrcasecmp(const char *a, const char *e) {
-	if (!a || !e) {
-		return (a==e) ? 0 : 1;
+	if ((a == NULL) || (e == NULL)) {
+		return (a == e) ? 0 : 1;
 	}
 	for (; *a && *e && (*e != '/'); a++,e++) {
 		if (*e == '~') {
@@ -35,7 +35,7 @@ static int cJSONUtils_Pstrcasecmp(const char *a, const char *e) {
 			return 1;
 		}
 	}
-	if (((*e != 0) && (*e != '/')) != (*a != 0)) {
+	if (((*e != '\0') && (*e != '/')) != (*a != '\0')) {
 		return 1;
 	}
 	return 0;
@@ -159,7 +159,7 @@ static cJSON *cJSONUtils_PatchDetach(cJSON *object, const char *path) {
 	parent = cJSONUtils_GetPointer(object, parentptr);
 	cJSONUtils_InplaceDecodePointerString(childptr);
 
-	if (!parent) { /* Couldn't find object to remove child from. */
+	if (parent == NULL) { /* Couldn't find object to remove child from. */
 		ret = 0;
 	} else if (parent->type == cJSON_Array) {
 		ret = cJSON_DetachItemFromArray(parent, atoi(childptr));
@@ -223,7 +223,7 @@ static int cJSONUtils_ApplyPatch(cJSON *object, cJSON *patch) {
 
 	op = cJSON_GetObjectItem(patch, "op");
 	path = cJSON_GetObjectItem(patch, "path");
-	if (!op || !path) { /* malformed patch. */
+	if ((op == NULL) || (path == NULL)) { /* malformed patch. */
 		return 2;
 	}
 
@@ -252,7 +252,7 @@ static int cJSONUtils_ApplyPatch(cJSON *object, cJSON *patch) {
 
 	if ((opcode == 3) || (opcode == 4)) {/* Copy/Move uses "from". */
 		cJSON *from = cJSON_GetObjectItem(patch, "from");
-		if (!from) { /* missing "from" for copy/move. */
+		if (from == NULL) { /* missing "from" for copy/move. */
 			return 4;
 		}
 
@@ -262,22 +262,22 @@ static int cJSONUtils_ApplyPatch(cJSON *object, cJSON *patch) {
 		if (opcode == 4) {
 			value = cJSONUtils_GetPointer(object, from->valuestring);
 		}
-		if (!value) { /* missing "from" for copy/move. */
+		if (value == NULL) { /* missing "from" for copy/move. */
 			return 5;
 		}
 		if (opcode == 4) {
 			value = cJSON_Duplicate(value, 1);
 		}
-		if (!value) { /* out of memory for copy/move. */
+		if (value == NULL) { /* out of memory for copy/move. */
 			return 6;
 		}
 	} else { /* Add/Replace uses "value". */
 		value = cJSON_GetObjectItem(patch, "value");
-		if (!value) { /* missing "value" for add/replace. */
+		if (value == NULL) { /* missing "value" for add/replace. */
 			return 7;
 		}
 		value = cJSON_Duplicate(value, 1);
-		if (!value) { /* out of memory for add/replace. */
+		if (value == NULL) { /* out of memory for add/replace. */
 			return 8;
 		}
 	}
@@ -294,7 +294,7 @@ static int cJSONUtils_ApplyPatch(cJSON *object, cJSON *patch) {
 	cJSONUtils_InplaceDecodePointerString(childptr);
 
 	/* add, remove, replace, move, copy, test. */
-	if (!parent) { /* Couldn't find object to add to. */
+	if (parent == NULL) { /* Couldn't find object to add to. */
 		free(parentptr);
 		cJSON_Delete(value);
 		return 9;
@@ -399,14 +399,14 @@ static void cJSONUtils_CompareToPatch(cJSON *patches, const char *path, cJSON *f
 			b = to->child;
 			while (a || b) {
 				int diff;
-				if (!a) {
+				if (a == NULL) {
 					diff = 1;
-				} else if (!b) {
+				} else if (b == NULL) {
 					diff = -1;
 				} else {
 					diff = cJSONUtils_strcasecmp(a->string, b->string);
 				}
-				if (!diff) {
+				if (diff == 0) {
 					char *newpath = (char*)malloc(strlen(path) + cJSONUtils_PointerEncodedstrlen(a->string) + 2);
 					cJSONUtils_PointerEncodedstrcpy(newpath + sprintf(newpath, "%s/", path), a->string);
 					cJSONUtils_CompareToPatch(patches, newpath, a, b);
@@ -442,14 +442,14 @@ static cJSON *cJSONUtils_SortList(cJSON *list) {
 	cJSON *second = list;
 	cJSON *ptr = list;
 
-	if (!list || !list->next) { /* One entry is sorted already. */
+	if ((list == NULL) || (list->next == NULL)) { /* One entry is sorted already. */
 		return list;
 	}
 
 	while (ptr && ptr->next && (cJSONUtils_strcasecmp(ptr->string, ptr->next->string) < 0)) { /* Test for list sorted. */
 		ptr = ptr->next;
 	}
-	if (!ptr || !ptr->next) { /* Leave sorted lists unmodified. */
+	if ((ptr == NULL) || (ptr->next == NULL)) { /* Leave sorted lists unmodified. */
 		return list;
 	}
 	ptr = list;
@@ -472,7 +472,7 @@ static cJSON *cJSONUtils_SortList(cJSON *list) {
 
 	while (first && second) {/* Merge the sub-lists */
 		if (cJSONUtils_strcasecmp(first->string, second->string) < 0) {
-			if (!list) {
+			if (list == NULL) {
 				ptr = first;
 				list = ptr;
 			} else {
@@ -482,7 +482,7 @@ static cJSON *cJSONUtils_SortList(cJSON *list) {
 			}
 			first = first->next;
 		} else {
-			if (!list) {
+			if (list == NULL) {
 				ptr = second;
 				list = ptr;
 			} else {
@@ -494,14 +494,14 @@ static cJSON *cJSONUtils_SortList(cJSON *list) {
 		}
 	}
 	if (first) { /* Append any tails. */
-		if (!list) {
+		if (list == NULL) {
 			return first;
 		}
 		ptr->next = first;
 		first->prev = ptr;
 	}
 	if (second) {
-		if (!list) {
+		if (list == NULL) {
 			return second;
 		}
 		ptr->next = second;
