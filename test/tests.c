@@ -153,11 +153,11 @@ int main (void) {
 	doit(text5);
 
 	/* Parse standard testfiles: */
-/*	dofile("../../tests/test1"); */
-/*	dofile("../../tests/test2"); */
-/*	dofile("../../tests/test3"); */
-/*	dofile("../../tests/test4"); */
-/*	dofile("../../tests/test5"); */
+	dofile("test-data/test1");
+	dofile("test-data/test2");
+	dofile("test-data/test3");
+	dofile("test-data/test4");
+	dofile("test-data/test5");
 
 	/* Now some samplecode for building objects concisely: */
 	create_objects();
