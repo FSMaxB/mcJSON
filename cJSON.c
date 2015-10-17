@@ -34,7 +34,9 @@
 
 static const char *ep;
 
-const char *cJSON_GetErrorPtr(void) {return ep;}
+const char *cJSON_GetErrorPtr(void) {
+	return ep;
+}
 
 static int cJSON_strcasecmp(const char *s1,const char *s2)
 {
