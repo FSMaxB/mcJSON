@@ -66,34 +66,30 @@ static void cJSONUtils_PointerEncodedstrcpy(char *d, const char *s) {
 	*d = 0;
 }
 
-char *cJSONUtils_FindPointerFromObjectTo(cJSON *object,cJSON *target)
-{
-	int type=object->type,c=0;cJSON *obj=0;
+char *cJSONUtils_FindPointerFromObjectTo(cJSON *object, cJSON *target) {
+	cJSON_Type type = object->type;
+	int c = 0;
+	cJSON *obj = 0;
 
-	if (object==target)
-	{
+	if (object == target) {
 		char *empty = malloc(1);
 		empty[0] = '\0';
 		return empty;
 	}
 
-	for (obj=object->child;obj;obj=obj->next,c++)
-	{
-		char *found=cJSONUtils_FindPointerFromObjectTo(obj,target);
-		if (found)
-		{
-			if (type==cJSON_Array)
-			{
-				char *ret=(char*)malloc(strlen(found)+23);
-				sprintf(ret,"/%d%s",c,found);
+	for (obj = object->child; obj; obj = obj->next, c++) {
+		char *found = cJSONUtils_FindPointerFromObjectTo(obj, target);
+		if (found) {
+			if (type == cJSON_Array) {
+				char *ret = (char*)malloc(strlen(found) + 23);
+				sprintf(ret, "/%d%s", c, found);
 				free(found);
 				return ret;
-			}
-			else if (type==cJSON_Object)
-			{
-				char *ret=(char*)malloc(strlen(found)+cJSONUtils_PointerEncodedstrlen(obj->string)+2);
-				*ret='/';cJSONUtils_PointerEncodedstrcpy(ret+1,obj->string);
-				strcat(ret,found);
+			} else if (type == cJSON_Object) {
+				char *ret = (char*)malloc(strlen(found) + cJSONUtils_PointerEncodedstrlen(obj->string) + 2);
+				*ret = '/';
+				cJSONUtils_PointerEncodedstrcpy(ret + 1, obj->string);
+				strcat(ret, found);
 				free(found);
 				return ret;
 			}
