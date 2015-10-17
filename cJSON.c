@@ -215,39 +215,20 @@ static char *print_number(cJSON *item,printbuffer *p) {
 //TODO does this work with both big and little endian?
 static unsigned parse_hex4(const char *str) {
 	unsigned h = 0;
-	if ((*str >= '0') && (*str <= '9')) {
-		h += (*str) - '0';
-	} else if ((*str >= 'A') && (*str<='F')) {
-		h += 10 + (*str) - 'A';
-	} else if ((*str >= 'a') && (*str <= 'f')) {
-		h+= 10 + (*str) - 'a';
-	} else {
-		return 0;
+	for (unsigned int i = 0; i < 3; i++) {
+		if ((*str >= '0') && (*str <= '9')) {
+			h += (*str) - '0';
+		} else if ((*str >= 'A') && (*str<='F')) {
+			h += 10 + (*str) - 'A';
+		} else if ((*str >= 'a') && (*str <= 'f')) {
+			h += 10 + (*str) - 'a';
+		} else {
+			return 0;
+		}
+		h = h << 4;
+		str++;
 	}
-	h = h << 4;
-	str++;
-	if ((*str >= '0') && (*str <= '9')) {
-		h += (*str) - '0';
-	} else if ((*str >= 'A') && (*str<='F')) {
-		h += 10 + (*str) - 'A';
-	} else if ((*str >= 'a') && (*str <= 'f')) {
-		h+= 10 + (*str) - 'a';
-	} else {
-		return 0;
-	}
-	h = h << 4;
-	str++;
-	if ((*str >= '0') && (*str <= '9')) {
-		h += (*str) - '0';
-	} else if ((*str >= 'A') && (*str<='F')) {
-		h += 10 + (*str) - 'A';
-	} else if ((*str >= 'a') && (*str <= 'f')) {
-		h+= 10 + (*str) - 'a';
-	} else {
-		return 0;
-	}
-	h = h << 4;
-	str++;
+
 	if ((*str >= '0') && (*str <= '9')) {
 		h += (*str) - '0';
 	} else if ((*str >= 'A') && (*str<='F')) {
