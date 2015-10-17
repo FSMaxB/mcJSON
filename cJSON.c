@@ -1220,7 +1220,9 @@ void cJSON_AddItemToObjectCS(cJSON *object, const char *string, cJSON *item) {
 	item->type |= cJSON_StringIsConst;
 	cJSON_AddItemToArray(object, item);
 }
-void	cJSON_AddItemReferenceToArray(cJSON *array, cJSON *item)						{cJSON_AddItemToArray(array,create_reference(item));}
+void cJSON_AddItemReferenceToArray(cJSON *array, cJSON *item) {
+	cJSON_AddItemToArray(array,create_reference(item));
+}
 void	cJSON_AddItemReferenceToObject(cJSON *object,const char *string,cJSON *item)	{cJSON_AddItemToObject(object,string,create_reference(item));}
 
 cJSON *cJSON_DetachItemFromArray(cJSON *array,int which)			{cJSON *c=array->child;while (c && which>0) c=c->next,which--;if (!c) return 0;
