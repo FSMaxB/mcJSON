@@ -170,29 +170,44 @@ static cJSON *cJSONUtils_PatchDetach(cJSON *object, const char *path) {
 	return ret;
 }
 
-static int cJSONUtils_Compare(cJSON *a,cJSON *b)
-{
-	if (a->type!=b->type)	return -1;	/* mismatched type. */
-	switch (a->type)
-	{
-	case cJSON_Number:	return (a->valueint!=b->valueint || a->valuedouble!=b->valuedouble)?-2:0;	/* numeric mismatch. */
-	case cJSON_String:	return (strcmp(a->valuestring,b->valuestring)!=0)?-3:0;						/* string mismatch. */
-	case cJSON_Array:	for (a=a->child,b=b->child;a && b;a=a->next,b=b->next)	{int err=cJSONUtils_Compare(a,b);if (err) return err;}
-						return (a || b)?-4:0;	/* array size mismatch. */
-	case cJSON_Object:
-						cJSONUtils_SortObject(a);
-						cJSONUtils_SortObject(b);
-						a=a->child,b=b->child;
-						while (a && b)
-						{
-							int err;
-							if (cJSONUtils_strcasecmp(a->string,b->string))	return -6;	/* missing member */
-							err=cJSONUtils_Compare(a,b);if (err) return err;
-							a=a->next,b=b->next;
-						}
-						return (a || b)?-5:0;	/* object length mismatch */
+static int cJSONUtils_Compare(cJSON *a, cJSON *b) {
+	if (a->type != b->type) { /* mismatched type. */
+		return -1;
+	}
+	switch (a->type) {
+		case cJSON_Number:
+			return ((a->valueint != b->valueint) || (a->valuedouble != b->valuedouble)) ? -2 : 0; /* numeric mismatch. */
+		case cJSON_String:
+			return (strcmp(a->valuestring, b->valuestring) != 0) ? -3 : 0; /* string mismatch. */
+		case cJSON_Array:
+			for (a = a->child, b = b->child; a && b; a = a->next, b = b->next) {
+				int err = cJSONUtils_Compare(a, b);
+				if (err) {
+					return err;
+				}
+			}
+			return (a || b) ? -4 : 0; /* array size mismatch. */
+		case cJSON_Object:
+			cJSONUtils_SortObject(a);
+			cJSONUtils_SortObject(b);
+			a = a->child;
+			b = b->child;
+			while (a && b) {
+				int err;
+				if (cJSONUtils_strcasecmp(a->string, b->string)) { /* missing member */
+					return -6;
+				}
+				err = cJSONUtils_Compare(a, b);
+				if (err) {
+					return err;
+				}
+				a = a->next;
+				b = b->next;
+			}
+			return (a || b) ? -5 : 0; /* object length mismatch */
 
-	default:			break;
+		default:
+			break;
 	}
 	return 0;
 }
