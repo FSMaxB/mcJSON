@@ -212,68 +212,102 @@ static int cJSONUtils_Compare(cJSON *a, cJSON *b) {
 	return 0;
 }
 
-static int cJSONUtils_ApplyPatch(cJSON *object,cJSON *patch)
-{
-	cJSON *op=0,*path=0,*value=0,*parent=0;int opcode=0;char *parentptr=0,*childptr=0;
+static int cJSONUtils_ApplyPatch(cJSON *object, cJSON *patch) {
+	cJSON *op = 0;
+	cJSON *path = 0;
+	cJSON *value = 0;
+	cJSON *parent = 0;
+	int opcode = 0;
+	char *parentptr = 0;
+	char *childptr = 0;
 
-	op=cJSON_GetObjectItem(patch,"op");
-	path=cJSON_GetObjectItem(patch,"path");
-	if (!op || !path) return 2;	/* malformed patch. */
-
-	if		(!strcmp(op->valuestring,"add"))	opcode=0;
-	else if (!strcmp(op->valuestring,"remove")) opcode=1;
-	else if (!strcmp(op->valuestring,"replace"))opcode=2;
-	else if (!strcmp(op->valuestring,"move"))	opcode=3;
-	else if (!strcmp(op->valuestring,"copy"))	opcode=4;
-	else if (!strcmp(op->valuestring,"test"))	return cJSONUtils_Compare(cJSONUtils_GetPointer(object,path->valuestring),cJSON_GetObjectItem(patch,"value"));
-	else return 3; /* unknown opcode. */
-
-	if (opcode==1 || opcode==2)	/* Remove/Replace */
-	{
-		cJSON_Delete(cJSONUtils_PatchDetach(object,path->valuestring));	/* Get rid of old. */
-		if (opcode==1) return 0;	/* For Remove, this is job done. */
+	op = cJSON_GetObjectItem(patch, "op");
+	path = cJSON_GetObjectItem(patch, "path");
+	if (!op || !path) { /* malformed patch. */
+		return 2;
 	}
 
-	if (opcode==3 || opcode==4)	/* Copy/Move uses "from". */
-	{
-		cJSON *from=cJSON_GetObjectItem(patch,"from");	if (!from) return 4; /* missing "from" for copy/move. */
-
-		if (opcode==3) value=cJSONUtils_PatchDetach(object,from->valuestring);
-		if (opcode==4) value=cJSONUtils_GetPointer(object,from->valuestring);
-		if (!value) return 5; /* missing "from" for copy/move. */
-		if (opcode==4) value=cJSON_Duplicate(value,1);
-		if (!value) return 6; /* out of memory for copy/move. */
+	if (!strcmp(op->valuestring,"add")) {
+		opcode = 0;
+	} else if (!strcmp(op->valuestring, "remove")) {
+		opcode = 1;
+	} else if (!strcmp(op->valuestring,"replace")) {
+		opcode = 2;
+	} else if (!strcmp(op->valuestring,"move")) {
+		opcode = 3;
+	} else if (!strcmp(op->valuestring, "copy")) {
+		opcode = 4;
+	} else if (!strcmp(op->valuestring,"test")) {
+		return cJSONUtils_Compare(cJSONUtils_GetPointer(object, path->valuestring), cJSON_GetObjectItem(patch, "value"));
+	} else { /* unknown opcode. */
+		return 3;
 	}
-	else	/* Add/Replace uses "value". */
-	{
-		value=cJSON_GetObjectItem(patch,"value");
-		if (!value) return 7; /* missing "value" for add/replace. */
-		value=cJSON_Duplicate(value,1);
-		if (!value) return 8; /* out of memory for add/replace. */
+
+	if ((opcode == 1) || (opcode == 2)) { /* Remove/Replace */
+		cJSON_Delete(cJSONUtils_PatchDetach(object, path->valuestring)); /* Get rid of old. */
+		if (opcode == 1) { /* For Remove, this is job done. */
+			return 0;
+		}
+	}
+
+	if ((opcode == 3) || (opcode == 4)) {/* Copy/Move uses "from". */
+		cJSON *from = cJSON_GetObjectItem(patch, "from");
+		if (!from) { /* missing "from" for copy/move. */
+			return 4;
+		}
+
+		if (opcode == 3) {
+			value = cJSONUtils_PatchDetach(object, from->valuestring);
+		}
+		if (opcode == 4) {
+			value = cJSONUtils_GetPointer(object, from->valuestring);
+		}
+		if (!value) { /* missing "from" for copy/move. */
+			return 5;
+		}
+		if (opcode == 4) {
+			value = cJSON_Duplicate(value, 1);
+		}
+		if (!value) { /* out of memory for copy/move. */
+			return 6;
+		}
+	} else { /* Add/Replace uses "value". */
+		value = cJSON_GetObjectItem(patch, "value");
+		if (!value) { /* missing "value" for add/replace. */
+			return 7;
+		}
+		value = cJSON_Duplicate(value, 1);
+		if (!value) { /* out of memory for add/replace. */
+			return 8;
+		}
 	}
 
 	/* Now, just add "value" to "path". */
 
 	parentptr = malloc(strlen(path->valuestring) + 1);
 	strcpy(parentptr, path->valuestring);
-	childptr=strrchr(parentptr,'/');	if (childptr) *childptr++=0;
-	parent=cJSONUtils_GetPointer(object,parentptr);
+	childptr = strrchr(parentptr, '/');
+	if (childptr) {
+		*childptr++ = 0;
+	}
+	parent = cJSONUtils_GetPointer(object, parentptr);
 	cJSONUtils_InplaceDecodePointerString(childptr);
 
 	/* add, remove, replace, move, copy, test. */
-	if (!parent) {free(parentptr); cJSON_Delete(value); return 9;}	/* Couldn't find object to add to. */
-	else if (parent->type==cJSON_Array)
-	{
-		if (!strcmp(childptr,"-"))	cJSON_AddItemToArray(parent,value);
-		else						cJSON_InsertItemInArray(parent,atoi(childptr),value);
-	}
-	else if (parent->type==cJSON_Object)
-	{
-		cJSON_DeleteItemFromObject(parent,childptr);
-		cJSON_AddItemToObject(parent,childptr,value);
-	}
-	else
-	{
+	if (!parent) { /* Couldn't find object to add to. */
+		free(parentptr);
+		cJSON_Delete(value);
+		return 9;
+	} else if (parent->type == cJSON_Array) {
+		if (!strcmp(childptr, "-")) {
+			cJSON_AddItemToArray(parent,value);
+		} else {
+			cJSON_InsertItemInArray(parent, atoi(childptr), value);
+		}
+	} else if (parent->type == cJSON_Object) {
+		cJSON_DeleteItemFromObject(parent, childptr);
+		cJSON_AddItemToObject(parent, childptr, value);
+	} else {
 		cJSON_Delete(value);
 	}
 	free(parentptr);
