@@ -315,15 +315,19 @@ static int cJSONUtils_ApplyPatch(cJSON *object, cJSON *patch) {
 }
 
 
-int cJSONUtils_ApplyPatches(cJSON *object,cJSON *patches)
-{
+int cJSONUtils_ApplyPatches(cJSON *object, cJSON *patches) {
 	int err;
-	if (patches->type!=cJSON_Array) return 1;	/* malformed patches. */
-	if (patches) patches=patches->child;
-	while (patches)
-	{
-		if ((err=cJSONUtils_ApplyPatch(object,patches))) return err;
-		patches=patches->next;
+	if (patches->type != cJSON_Array) { /* malformed patches. */
+		return 1;
+	}
+	if (patches) {
+		patches = patches->child;
+	}
+	while (patches) {
+		if ((err = cJSONUtils_ApplyPatch(object, patches))) {
+			return err;
+		}
+		patches = patches->next;
 	}
 	return 0;
 }
