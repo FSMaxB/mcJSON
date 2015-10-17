@@ -332,39 +332,26 @@ int cJSONUtils_ApplyPatches(cJSON *object, cJSON *patches) {
 	return 0;
 }
 
-static void cJSONUtils_GeneratePatch(cJSON *patches,const char *op,const char *path,const char *suffix,cJSON *val)
-{
-	cJSON *patch=cJSON_CreateObject();
-	cJSON_AddItemToObject(patch,"op",cJSON_CreateString(op));
-	if (suffix)
-	{
-		char *newpath=(char*)malloc(strlen(path)+cJSONUtils_PointerEncodedstrlen(suffix)+2);
-		cJSONUtils_PointerEncodedstrcpy(newpath+sprintf(newpath,"%s/",path),suffix);
-		cJSON_AddItemToObject(patch,"path",cJSON_CreateString(newpath));
+static void cJSONUtils_GeneratePatch(cJSON *patches, const char *op, const char *path, const char *suffix, cJSON *val) {
+	cJSON *patch = cJSON_CreateObject();
+	cJSON_AddItemToObject(patch, "op", cJSON_CreateString(op));
+	if (suffix) {
+		char *newpath = (char*)malloc(strlen(path) + cJSONUtils_PointerEncodedstrlen(suffix) + 2);
+		cJSONUtils_PointerEncodedstrcpy(newpath + sprintf(newpath, "%s/", path), suffix);
+		cJSON_AddItemToObject(patch, "path", cJSON_CreateString(newpath));
 		free(newpath);
+	} else {
+		cJSON_AddItemToObject(patch, "path", cJSON_CreateString(path));
 	}
-	else	cJSON_AddItemToObject(patch,"path",cJSON_CreateString(path));
-	if (val) cJSON_AddItemToObject(patch,"value",cJSON_Duplicate(val,1));
-	cJSON_AddItemToArray(patches,patch);
+	if (val) {
+		cJSON_AddItemToObject(patch, "value", cJSON_Duplicate(val, 1));
+	}
+	cJSON_AddItemToArray(patches, patch);
 }
 
-void cJSONUtils_AddPatchToArray(cJSON *array,const char *op,const char *path,cJSON *val)	{cJSONUtils_GeneratePatch(array,op,path,0,val);}
-
-static void cJSONUtils_CompareToPatch(cJSON *patches,const char *path,cJSON *from,cJSON *to)
-{
-	if (from->type!=to->type)	{cJSONUtils_GeneratePatch(patches,"replace",path,0,to);	return;	}
-
-	switch (from->type)
-	{
-	case cJSON_Number:
-		if (from->valueint!=to->valueint || from->valuedouble!=to->valuedouble)
-			cJSONUtils_GeneratePatch(patches,"replace",path,0,to);
-		return;
-
-	case cJSON_String:
-		if (strcmp(from->valuestring,to->valuestring)!=0)
-			cJSONUtils_GeneratePatch(patches,"replace",path,0,to);
-		return;
+void cJSONUtils_AddPatchToArray(cJSON *array, const char *op, const char *path, cJSON *val) {
+	cJSONUtils_GeneratePatch(array, op, path, 0, val);
+}
 
 	case cJSON_Array:
 	{
