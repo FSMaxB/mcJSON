@@ -1,5 +1,12 @@
 #include "cJSON.h"
 
+#ifndef cJSON_UTILS__H
+#define cJSON_UTILS__H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Implement RFC6901 (https://tools.ietf.org/html/rfc6901) JSON Pointer spec.	*/
 cJSON *cJSONUtils_GetPointer(cJSON *object,const char *pointer);
 
@@ -24,3 +31,9 @@ int cJSONUtils_ApplyPatches(cJSON *object,cJSON *patches);	/* Returns 0 for succ
 char *cJSONUtils_FindPointerFromObjectTo(cJSON *object,cJSON *target);	/* Given a root object and a target object, construct a pointer from one to the other.	*/
 
 void cJSONUtils_SortObject(cJSON *object);	/* Sorts the members of the object into alphabetical order.	*/
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
