@@ -4,7 +4,7 @@ set(tests tests test_utils)
 
 foreach(test ${tests})
     add_executable(${test} ${test})
-    target_link_libraries(${test} cjson cjson-utils)
+    target_link_libraries(${test} mcjson mcjson-utils)
     add_test(NAME ${test}
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         COMMAND "${CMAKE_CURRENT_BINARY_DIR}/${test}")

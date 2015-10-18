@@ -1,16 +1,16 @@
 cmake_minimum_required (VERSION 2.6)
 
-project (cJSON)
+project (mcJSON)
 
 subdirs(test)
 
 enable_testing()
 
-add_library(cjson cJSON)
-target_link_libraries(cjson m)
+add_library(mcjson mcJSON)
+target_link_libraries(mcjson m)
 
-add_library(cjson-utils cJSON_Utils)
-target_link_libraries(cjson-utils cjson)
+add_library(mcjson-utils mcJSON_Utils)
+target_link_libraries(mcjson-utils mcjson)
 
 #more secure linker and compiler flags
 if(APPLE)

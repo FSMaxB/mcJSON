@@ -40,39 +40,39 @@
  * |  THE SOFTWARE.
  */
 
-#include "cJSON.h"
+#include "mcJSON.h"
 
-#ifndef cJSON_UTILS__H
-#define cJSON_UTILS__H
+#ifndef mcJSON_UTILS__H
+#define mcJSON_UTILS__H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Implement RFC6901 (https://tools.ietf.org/html/rfc6901) JSON Pointer spec.	*/
-cJSON *cJSONUtils_GetPointer(cJSON *object,const char *pointer);
+mcJSON *mcJSONUtils_GetPointer(mcJSON *object,const char *pointer);
 
 /* Implement RFC6902 (https://tools.ietf.org/html/rfc6902) JSON Patch spec.		*/
-cJSON* cJSONUtils_GeneratePatches(cJSON *from,cJSON *to);
-void cJSONUtils_AddPatchToArray(cJSON *array,const char *op,const char *path,cJSON *val);	/* Utility for generating patch array entries.	*/
-int cJSONUtils_ApplyPatches(cJSON *object,cJSON *patches);	/* Returns 0 for success. */
+mcJSON* mcJSONUtils_GeneratePatches(mcJSON *from,mcJSON *to);
+void mcJSONUtils_AddPatchToArray(mcJSON *array,const char *op,const char *path,mcJSON *val);	/* Utility for generating patch array entries.	*/
+int mcJSONUtils_ApplyPatches(mcJSON *object,mcJSON *patches);	/* Returns 0 for success. */
 
 /*
 // Note that ApplyPatches is NOT atomic on failure. To implement an atomic ApplyPatches, use:
-//int cJSONUtils_AtomicApplyPatches(cJSON **object, cJSON *patches)
+//int mcJSONUtils_AtomicApplyPatches(mcJSON **object, mcJSON *patches)
 //{
-//	cJSON *modme=cJSON_Duplicate(*object,1);
-//	int error=cJSONUtils_ApplyPatches(modme,patches);
-//	if (!error)	{cJSON_Delete(*object);*object=modme;}
-//	else		cJSON_Delete(modme);
+//	mcJSON *modme=mcJSON_Duplicate(*object,1);
+//	int error=mcJSONUtils_ApplyPatches(modme,patches);
+//	if (!error)	{mcJSON_Delete(*object);*object=modme;}
+//	else		mcJSON_Delete(modme);
 //	return error;
 //}
 // Code not added to library since this strategy is a LOT slower.
 */
 
-char *cJSONUtils_FindPointerFromObjectTo(cJSON *object,cJSON *target);	/* Given a root object and a target object, construct a pointer from one to the other.	*/
+char *mcJSONUtils_FindPointerFromObjectTo(mcJSON *object,mcJSON *target);	/* Given a root object and a target object, construct a pointer from one to the other.	*/
 
-void cJSONUtils_SortObject(cJSON *object);	/* Sorts the members of the object into alphabetical order.	*/
+void mcJSONUtils_SortObject(mcJSON *object);	/* Sorts the members of the object into alphabetical order.	*/
 
 #ifdef __cplusplus
 }

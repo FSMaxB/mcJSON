@@ -43,12 +43,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../cJSON_Utils.h"
+#include "../mcJSON_Utils.h"
 
 int main(void) {
 	int i;
 	/* JSON Pointer tests: */
-	cJSON *root;
+	mcJSON *root;
 	const char *json= "{"
 		"\"foo\": [\"bar\", \"baz\"],"
 		"\"\": 0,"
@@ -89,82 +89,82 @@ int main(void) {
 	char buf[2] = {0, 0};
 	char *before;
 	char *after;
-	cJSON *object;
-	cJSON *nums;
-	cJSON *num6;
-	cJSON *sortme;
+	mcJSON *object;
+	mcJSON *nums;
+	mcJSON *num6;
+	mcJSON *sortme;
 
 	printf("JSON Pointer Tests\n");
-	root = cJSON_Parse(json);
+	root = mcJSON_Parse(json);
 	for (i = 0; i < 12; i++) {
-		char *output = cJSON_Print(cJSONUtils_GetPointer(root, tests[i]));
+		char *output = mcJSON_Print(mcJSONUtils_GetPointer(root, tests[i]));
 		printf("Test %d:\n%s\n\n", i + 1,output);
 		free(output);
 	}
-	cJSON_Delete(root);
+	mcJSON_Delete(root);
 
 
 	printf("JSON Apply Patch Tests\n");
 	for (i = 0; i < 15; i++) {
-		cJSON *object = cJSON_Parse(patches[i][0]);
-		cJSON *patch = cJSON_Parse(patches[i][1]);
-		int err = cJSONUtils_ApplyPatches(object, patch);
-		char *output = cJSON_Print(object);
+		mcJSON *object = mcJSON_Parse(patches[i][0]);
+		mcJSON *patch = mcJSON_Parse(patches[i][1]);
+		int err = mcJSONUtils_ApplyPatches(object, patch);
+		char *output = mcJSON_Print(object);
 		printf("Test %d (err %d):\n%s\n\n", i + 1, err, output);
 		free(output);
-		cJSON_Delete(object);
-		cJSON_Delete(patch);
+		mcJSON_Delete(object);
+		mcJSON_Delete(patch);
 	}
 
 	/* JSON Generate Patch tests: */
 	printf("JSON Generate Patch Tests\n");
 	for (i = 0; i < 15; i++) {
-		cJSON *from;
-		cJSON *to;
-		cJSON *patch;
+		mcJSON *from;
+		mcJSON *to;
+		mcJSON *patch;
 		char *out;
 		if (!strlen(patches[i][2])) {
 			continue;
 		}
-		from = cJSON_Parse(patches[i][0]);
-		to = cJSON_Parse(patches[i][2]);
-		patch = cJSONUtils_GeneratePatches(from, to);
-		out = cJSON_Print(patch);
+		from = mcJSON_Parse(patches[i][0]);
+		to = mcJSON_Parse(patches[i][2]);
+		patch = mcJSONUtils_GeneratePatches(from, to);
+		out = mcJSON_Print(patch);
 		printf("Test %d: (patch: %s):\n%s\n\n", i + 1, patches[i][1], out);
 		free(out);
-		cJSON_Delete(from);
-		cJSON_Delete(to);
-		cJSON_Delete(patch);
+		mcJSON_Delete(from);
+		mcJSON_Delete(to);
+		mcJSON_Delete(patch);
 	}
 
 	/* Misc tests: */
 	printf("JSON Pointer construct\n");
-	object = cJSON_CreateObject();
-	nums = cJSON_CreateIntArray(numbers, 10);
-	num6 = cJSON_GetArrayItem(nums, 6);
-	cJSON_AddItemToObject(object, "numbers", nums);
-	char *temp = cJSONUtils_FindPointerFromObjectTo(object, num6);
+	object = mcJSON_CreateObject();
+	nums = mcJSON_CreateIntArray(numbers, 10);
+	num6 = mcJSON_GetArrayItem(nums, 6);
+	mcJSON_AddItemToObject(object, "numbers", nums);
+	char *temp = mcJSONUtils_FindPointerFromObjectTo(object, num6);
 	printf("Pointer: [%s]\n", temp);
 	free(temp);
-	temp = cJSONUtils_FindPointerFromObjectTo(object, nums);
+	temp = mcJSONUtils_FindPointerFromObjectTo(object, nums);
 	printf("Pointer: [%s]\n", temp);
 	free(temp);
-	temp = cJSONUtils_FindPointerFromObjectTo(object, object);
+	temp = mcJSONUtils_FindPointerFromObjectTo(object, object);
 	printf("Pointer: [%s]\n", temp);
 	free(temp);
-	cJSON_Delete(object);
+	mcJSON_Delete(object);
 
 	/* JSON Sort test: */
-	sortme = cJSON_CreateObject();
+	sortme = mcJSON_CreateObject();
 	for (i = 0; i < 26; i++) {
 		buf[0] = random[i];
-		cJSON_AddItemToObject(sortme, buf, cJSON_CreateNumber(1));
+		mcJSON_AddItemToObject(sortme, buf, mcJSON_CreateNumber(1));
 	}
-	before = cJSON_PrintUnformatted(sortme);
-	cJSONUtils_SortObject(sortme);
-	after = cJSON_PrintUnformatted(sortme);
+	before = mcJSON_PrintUnformatted(sortme);
+	mcJSONUtils_SortObject(sortme);
+	after = mcJSON_PrintUnformatted(sortme);
 	printf("Before: [%s]\nAfter: [%s]\n\n", before, after);
 	free(before);
 	free(after);
-	cJSON_Delete(sortme);
+	mcJSON_Delete(sortme);
 }

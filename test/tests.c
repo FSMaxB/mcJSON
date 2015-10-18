@@ -42,20 +42,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "../cJSON.h"
+#include "../mcJSON.h"
 
 /* Parse text to JSON, then render back to text, and print! */
 int doit(char *text) {
 	char *out;
-	cJSON *json;
+	mcJSON *json;
 
-	json = cJSON_Parse(text);
+	json = mcJSON_Parse(text);
 	if (json == NULL) {
-		fprintf(stderr, "Error before: [%s]\n", cJSON_GetErrorPtr());
+		fprintf(stderr, "Error before: [%s]\n", mcJSON_GetErrorPtr());
 		return 0;
 	} else {
-		out = cJSON_Print(json);
-		cJSON_Delete(json);
+		out = mcJSON_Print(json);
+		mcJSON_Delete(json);
 		printf("%s\n", out);
 		free(out);
 	}
@@ -110,11 +110,11 @@ struct record {
 /* Create a bunch of objects as demonstration. */
 void create_objects() {
 	/* declare a few. */
-	cJSON *root;
-	cJSON *fmt;
-	cJSON *img;
-	cJSON *thm;
-	cJSON *fld;
+	mcJSON *root;
+	mcJSON *fmt;
+	mcJSON *img;
+	mcJSON *thm;
+	mcJSON *fld;
 	char *out;
 	int i;
 	/* Our "days of the week" array: */
@@ -132,86 +132,86 @@ void create_objects() {
 	/* Here we construct some JSON standards, from the JSON site. */
 
 	/* Our "Video" datatype: */
-	root = cJSON_CreateObject();
-	cJSON_AddItemToObject(root, "name", cJSON_CreateString("Jack (\"Bee\") Nimble"));
-	cJSON_AddItemToObject(root, "format", fmt=cJSON_CreateObject());
-	cJSON_AddStringToObject(fmt, "type", "rect");
-	cJSON_AddNumberToObject(fmt, "width", 1920);
-	cJSON_AddNumberToObject(fmt, "height", 1080);
-	cJSON_AddFalseToObject (fmt, "interlace");
-	cJSON_AddNumberToObject(fmt, "frame rate", 24);
+	root = mcJSON_CreateObject();
+	mcJSON_AddItemToObject(root, "name", mcJSON_CreateString("Jack (\"Bee\") Nimble"));
+	mcJSON_AddItemToObject(root, "format", fmt=mcJSON_CreateObject());
+	mcJSON_AddStringToObject(fmt, "type", "rect");
+	mcJSON_AddNumberToObject(fmt, "width", 1920);
+	mcJSON_AddNumberToObject(fmt, "height", 1080);
+	mcJSON_AddFalseToObject (fmt, "interlace");
+	mcJSON_AddNumberToObject(fmt, "frame rate", 24);
 
-	/* Print to text, Delete the cJSON, print it, release the string. */
-	out = cJSON_Print(root);
-	cJSON_Delete(root);
+	/* Print to text, Delete the mcJSON, print it, release the string. */
+	out = mcJSON_Print(root);
+	mcJSON_Delete(root);
 	printf("%s\n", out);
 	free(out);
 
 	/* Our "days of the week" array: */
-	root = cJSON_CreateStringArray(strings, 7);
+	root = mcJSON_CreateStringArray(strings, 7);
 
-	out = cJSON_Print(root);
-	cJSON_Delete(root);
+	out = mcJSON_Print(root);
+	mcJSON_Delete(root);
 	printf("%s\n", out);
 	free(out);
 
 	/* Our matrix: */
-	root = cJSON_CreateArray();
+	root = mcJSON_CreateArray();
 	for (i = 0; i < 3; i++) {
-		cJSON_AddItemToArray(root, cJSON_CreateIntArray(numbers[i], 3));
+		mcJSON_AddItemToArray(root, mcJSON_CreateIntArray(numbers[i], 3));
 	}
 
-	/*cJSON_ReplaceItemInArray(root,1,cJSON_CreateString("Replacement")); */
+	/*mcJSON_ReplaceItemInArray(root,1,mcJSON_CreateString("Replacement")); */
 
-	out = cJSON_Print(root);
-	cJSON_Delete(root);
+	out = mcJSON_Print(root);
+	mcJSON_Delete(root);
 	printf("%s\n",out);
 	free(out);
 
 
 	/* Our "gallery" item: */
-	root = cJSON_CreateObject();
-	cJSON_AddItemToObject(root, "Image", img = cJSON_CreateObject());
-	cJSON_AddNumberToObject(img, "Width", 800);
-	cJSON_AddNumberToObject(img, "Height", 600);
-	cJSON_AddStringToObject(img, "Title", "View from 15th Floor");
-	cJSON_AddItemToObject(img, "Thumbnail", thm = cJSON_CreateObject());
-	cJSON_AddStringToObject(thm, "Url", "http:/*www.example.com/image/481989943");
-	cJSON_AddNumberToObject(thm, "Height", 125);
-	cJSON_AddStringToObject(thm, "Width", "100");
-	cJSON_AddItemToObject(img, "IDs", cJSON_CreateIntArray(ids, 4));
+	root = mcJSON_CreateObject();
+	mcJSON_AddItemToObject(root, "Image", img = mcJSON_CreateObject());
+	mcJSON_AddNumberToObject(img, "Width", 800);
+	mcJSON_AddNumberToObject(img, "Height", 600);
+	mcJSON_AddStringToObject(img, "Title", "View from 15th Floor");
+	mcJSON_AddItemToObject(img, "Thumbnail", thm = mcJSON_CreateObject());
+	mcJSON_AddStringToObject(thm, "Url", "http:/*www.example.com/image/481989943");
+	mcJSON_AddNumberToObject(thm, "Height", 125);
+	mcJSON_AddStringToObject(thm, "Width", "100");
+	mcJSON_AddItemToObject(img, "IDs", mcJSON_CreateIntArray(ids, 4));
 
-	out = cJSON_Print(root);
-	cJSON_Delete(root);
+	out = mcJSON_Print(root);
+	mcJSON_Delete(root);
 	printf("%s\n", out);
 	free(out);
 
 	/* Our array of "records": */
 
-	root = cJSON_CreateArray();
+	root = mcJSON_CreateArray();
 	for (i = 0; i < 2; i++) {
-		cJSON_AddItemToArray(root, fld = cJSON_CreateObject());
-		cJSON_AddStringToObject(fld, "precision", fields[i].precision);
-		cJSON_AddNumberToObject(fld, "Latitude", fields[i].lat);
-		cJSON_AddNumberToObject(fld, "Longitude", fields[i].lon);
-		cJSON_AddStringToObject(fld, "Address", fields[i].address);
-		cJSON_AddStringToObject(fld, "City", fields[i].city);
-		cJSON_AddStringToObject(fld, "State", fields[i].state);
-		cJSON_AddStringToObject(fld, "Zip", fields[i].zip);
-		cJSON_AddStringToObject(fld, "Country", fields[i].country);
+		mcJSON_AddItemToArray(root, fld = mcJSON_CreateObject());
+		mcJSON_AddStringToObject(fld, "precision", fields[i].precision);
+		mcJSON_AddNumberToObject(fld, "Latitude", fields[i].lat);
+		mcJSON_AddNumberToObject(fld, "Longitude", fields[i].lon);
+		mcJSON_AddStringToObject(fld, "Address", fields[i].address);
+		mcJSON_AddStringToObject(fld, "City", fields[i].city);
+		mcJSON_AddStringToObject(fld, "State", fields[i].state);
+		mcJSON_AddStringToObject(fld, "Zip", fields[i].zip);
+		mcJSON_AddStringToObject(fld, "Country", fields[i].country);
 	}
 
-	/*	cJSON_ReplaceItemInObject(cJSON_GetArrayItem(root,1),"City",cJSON_CreateIntArray(ids,4)); */
+	/*	mcJSON_ReplaceItemInObject(mcJSON_GetArrayItem(root,1),"City",mcJSON_CreateIntArray(ids,4)); */
 
-	out = cJSON_Print(root);
-	cJSON_Delete(root);
+	out = mcJSON_Print(root);
+	mcJSON_Delete(root);
 	printf("%s\n", out);
 	free(out);
 
-	root = cJSON_CreateObject();
-	cJSON_AddNumberToObject(root, "number", 1.0/0.0);
-	out=cJSON_Print(root);
-	cJSON_Delete(root);
+	root = mcJSON_CreateObject();
+	mcJSON_AddNumberToObject(root, "number", 1.0/0.0);
+	out=mcJSON_Print(root);
+	mcJSON_Delete(root);
 	printf("%s\n", out);
 	free(out);
 }
