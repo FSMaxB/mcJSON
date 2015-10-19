@@ -43,6 +43,8 @@
 #ifndef mcJSON__h
 #define mcJSON__h
 
+#include "buffer/buffer.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -69,11 +71,11 @@ typedef struct mcJSON {
 
 	mcJSON_Type type; /* The type of the item, as above. */
 
-	char *valuestring; /* The item's string, if type==mcJSON_String */
+	buffer_t * valuestring; /* The item's string, if type==mcJSON_String */
 	int valueint; /* The item's number, if type==mcJSON_Number */
 	double valuedouble; /* The item's number, if type==mcJSON_Number */
 
-	char *string; /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
+	buffer_t * string; /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
 } mcJSON;
 
 typedef struct mcJSON_Hooks {

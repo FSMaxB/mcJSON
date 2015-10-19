@@ -129,9 +129,9 @@ char *mcJSONUtils_FindPointerFromObjectTo(mcJSON *object, mcJSON *target) {
 				free(found);
 				return ret;
 			} else if (type == mcJSON_Object) {
-				char *ret = (char*)malloc(strlen(found) + mcJSONUtils_PointerEncodedstrlen(obj->string) + 2);
+				char *ret = (char*)malloc(strlen(found) + mcJSONUtils_PointerEncodedstrlen((char*)obj->string->content) + 2);
 				*ret = '/';
-				mcJSONUtils_PointerEncodedstrcpy(ret + 1, obj->string);
+				mcJSONUtils_PointerEncodedstrcpy(ret + 1, (char*)obj->string->content);
 				strcat(ret, found);
 				free(found);
 				return ret;
@@ -156,7 +156,7 @@ mcJSON *mcJSONUtils_GetPointer(mcJSON *object, const char *pointer) {
 			object = mcJSON_GetArrayItem(object, which);
 		} else if (object->type == mcJSON_Object) {
 			object = object->child;
-			while (object && mcJSONUtils_Pstrcasecmp(object->string, pointer)) { /* GetObjectItem. */
+			while (object && mcJSONUtils_Pstrcasecmp((char*)object->string->content, pointer)) { /* GetObjectItem. */
 				object = object->next;
 			}
 			while (*pointer && (*pointer != '/')) {
@@ -224,7 +224,7 @@ static int mcJSONUtils_Compare(mcJSON *a, mcJSON *b) {
 		case mcJSON_Number:
 			return ((a->valueint != b->valueint) || (a->valuedouble != b->valuedouble)) ? -2 : 0; /* numeric mismatch. */
 		case mcJSON_String:
-			return (strcmp(a->valuestring, b->valuestring) != 0) ? -3 : 0; /* string mismatch. */
+			return (strcmp((char*)a->valuestring->content, (char*)b->valuestring->content) != 0) ? -3 : 0; /* string mismatch. */
 		case mcJSON_Array:
 			for (a = a->child, b = b->child; a && b; a = a->next, b = b->next) {
 				int err = mcJSONUtils_Compare(a, b);
@@ -240,7 +240,7 @@ static int mcJSONUtils_Compare(mcJSON *a, mcJSON *b) {
 			b = b->child;
 			while (a && b) {
 				int err;
-				if (mcJSONUtils_strcasecmp(a->string, b->string)) { /* missing member */
+				if (mcJSONUtils_strcasecmp((char*)a->string, (char*)b->string)) { /* missing member */
 					return -6;
 				}
 				err = mcJSONUtils_Compare(a, b);
@@ -273,24 +273,24 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 		return 2;
 	}
 
-	if (!strcmp(op->valuestring,"add")) {
+	if (!strcmp((char*)op->valuestring->content,"add")) {
 		opcode = 0;
-	} else if (!strcmp(op->valuestring, "remove")) {
+	} else if (!strcmp((char*)op->valuestring->content, "remove")) {
 		opcode = 1;
-	} else if (!strcmp(op->valuestring,"replace")) {
+	} else if (!strcmp((char*)op->valuestring->content,"replace")) {
 		opcode = 2;
-	} else if (!strcmp(op->valuestring,"move")) {
+	} else if (!strcmp((char*)op->valuestring->content,"move")) {
 		opcode = 3;
-	} else if (!strcmp(op->valuestring, "copy")) {
+	} else if (!strcmp((char*)op->valuestring->content, "copy")) {
 		opcode = 4;
-	} else if (!strcmp(op->valuestring,"test")) {
-		return mcJSONUtils_Compare(mcJSONUtils_GetPointer(object, path->valuestring), mcJSON_GetObjectItem(patch, "value"));
+	} else if (!strcmp((char*)op->valuestring->content,"test")) {
+		return mcJSONUtils_Compare(mcJSONUtils_GetPointer(object, (char*)path->valuestring->content), mcJSON_GetObjectItem(patch, "value"));
 	} else { /* unknown opcode. */
 		return 3;
 	}
 
 	if ((opcode == 1) || (opcode == 2)) { /* Remove/Replace */
-		mcJSON_Delete(mcJSONUtils_PatchDetach(object, path->valuestring)); /* Get rid of old. */
+		mcJSON_Delete(mcJSONUtils_PatchDetach(object, (char*)path->valuestring->content)); /* Get rid of old. */
 		if (opcode == 1) { /* For Remove, this is job done. */
 			return 0;
 		}
@@ -303,10 +303,10 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 		}
 
 		if (opcode == 3) {
-			value = mcJSONUtils_PatchDetach(object, from->valuestring);
+			value = mcJSONUtils_PatchDetach(object, (char*)from->valuestring->content);
 		}
 		if (opcode == 4) {
-			value = mcJSONUtils_GetPointer(object, from->valuestring);
+			value = mcJSONUtils_GetPointer(object, (char*)from->valuestring->content);
 		}
 		if (value == NULL) { /* missing "from" for copy/move. */
 			return 5;
@@ -330,8 +330,8 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 
 	/* Now, just add "value" to "path". */
 
-	parentptr = malloc(strlen(path->valuestring) + 1);
-	strcpy(parentptr, path->valuestring);
+	parentptr = malloc(strlen((char*)path->valuestring->content) + 1);
+	strcpy(parentptr, (char*)path->valuestring->content);
 	childptr = strrchr(parentptr, '/');
 	if (childptr) {
 		*childptr++ = 0;
@@ -418,7 +418,7 @@ static void mcJSONUtils_CompareToPatch(mcJSON *patches, const char *path, mcJSON
 			return;
 
 		case mcJSON_String:
-			if (strcmp(from->valuestring, to->valuestring) != 0) {
+			if (strcmp((char*)from->valuestring->content, (char*)to->valuestring->content) != 0) {
 				mcJSONUtils_GeneratePatch(patches, "replace", path, 0, to);
 			}
 			return;
@@ -456,21 +456,21 @@ static void mcJSONUtils_CompareToPatch(mcJSON *patches, const char *path, mcJSON
 				} else if (b == NULL) {
 					diff = -1;
 				} else {
-					diff = mcJSONUtils_strcasecmp(a->string, b->string);
+					diff = mcJSONUtils_strcasecmp((char*)a->string->content, (char*)b->string->content);
 				}
 				if (diff == 0) {
-					size_t length = strlen(path) + mcJSONUtils_PointerEncodedstrlen(a->string) + 2;
+					size_t length = strlen(path) + mcJSONUtils_PointerEncodedstrlen((char*)a->string->content) + 2;
 					char *newpath = (char*)malloc(length);
-					mcJSONUtils_PointerEncodedstrcpy(newpath + snprintf(newpath, length, "%s/", path), a->string);
+					mcJSONUtils_PointerEncodedstrcpy(newpath + snprintf(newpath, length, "%s/", path), (char*)a->string->content);
 					mcJSONUtils_CompareToPatch(patches, newpath, a, b);
 					free(newpath);
 					a = a->next;
 					b = b->next;
 				} else if (diff < 0) {
-					mcJSONUtils_GeneratePatch(patches, "remove", path, a->string, 0);
+					mcJSONUtils_GeneratePatch(patches, "remove", path, (char*)a->string->content, 0);
 					a = a->next;
 				} else {
-					mcJSONUtils_GeneratePatch(patches, "add", path, b->string, b);
+					mcJSONUtils_GeneratePatch(patches, "add", path, (char*)b->string->content, b);
 					b = b->next;
 				}
 			}
@@ -499,7 +499,7 @@ static mcJSON *mcJSONUtils_SortList(mcJSON *list) {
 		return list;
 	}
 
-	while (ptr && ptr->next && (mcJSONUtils_strcasecmp(ptr->string, ptr->next->string) < 0)) { /* Test for list sorted. */
+	while (ptr && ptr->next && (mcJSONUtils_strcasecmp((char*)ptr->string->content, (char*)ptr->next->string->content) < 0)) { /* Test for list sorted. */
 		ptr = ptr->next;
 	}
 	if ((ptr == NULL) || (ptr->next == NULL)) { /* Leave sorted lists unmodified. */
@@ -524,7 +524,7 @@ static mcJSON *mcJSONUtils_SortList(mcJSON *list) {
 	ptr = 0;
 
 	while (first && second) {/* Merge the sub-lists */
-		if (mcJSONUtils_strcasecmp(first->string, second->string) < 0) {
+		if (mcJSONUtils_strcasecmp((char*)first->string->content, (char*)second->string->content) < 0) {
 			if (list == NULL) {
 				ptr = first;
 				list = ptr;
