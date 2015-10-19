@@ -64,16 +64,16 @@ typedef enum mcJSON_Type {
 
 /* The mcJSON structure: */
 typedef struct mcJSON {
-	struct mcJSON *next,*prev;	/* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
-	struct mcJSON *child;		/* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */
+	struct mcJSON *next,*prev; /* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
+	struct mcJSON *child; /* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */
 
-	mcJSON_Type type;					/* The type of the item, as above. */
+	mcJSON_Type type; /* The type of the item, as above. */
 
-	char *valuestring;			/* The item's string, if type==mcJSON_String */
-	int valueint;				/* The item's number, if type==mcJSON_Number */
-	double valuedouble;			/* The item's number, if type==mcJSON_Number */
+	char *valuestring; /* The item's string, if type==mcJSON_String */
+	int valueint; /* The item's number, if type==mcJSON_Number */
+	double valuedouble; /* The item's number, if type==mcJSON_Number */
 
-	char *string;				/* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
+	char *string; /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
 } mcJSON;
 
 typedef struct mcJSON_Hooks {
@@ -88,16 +88,16 @@ extern void mcJSON_InitHooks(mcJSON_Hooks* hooks);
 /* Supply a block of JSON, and this returns a mcJSON object you can interrogate. Call mcJSON_Delete when finished. */
 extern mcJSON *mcJSON_Parse(const char *value);
 /* Render a mcJSON entity to text for transfer/storage. Free the char* when finished. */
-extern char  *mcJSON_Print(mcJSON *item);
+extern char *mcJSON_Print(mcJSON *item);
 /* Render a mcJSON entity to text for transfer/storage without any formatting. Free the char* when finished. */
-extern char  *mcJSON_PrintUnformatted(mcJSON *item);
+extern char *mcJSON_PrintUnformatted(mcJSON *item);
 /* Render a mcJSON entity to text using a buffered strategy. prebuffer is a guess at the final size. guessing well reduces reallocation. fmt=0 gives unformatted, =1 gives formatted */
 extern char *mcJSON_PrintBuffered(mcJSON *item,int prebuffer,int fmt);
 /* Delete a mcJSON entity and all subentities. */
-extern void   mcJSON_Delete(mcJSON *c);
+extern void mcJSON_Delete(mcJSON *c);
 
 /* Returns the number of items in an array (or object). */
-extern int	  mcJSON_GetArraySize(mcJSON *array);
+extern int mcJSON_GetArraySize(mcJSON *array);
 /* Retrieve item number "item" from array "array". Returns NULL if unsuccessful. */
 extern mcJSON *mcJSON_GetArrayItem(mcJSON *array,int item);
 /* Get item "string" from object. Case insensitive. */
@@ -124,17 +124,17 @@ extern mcJSON *mcJSON_CreateStringArray(const char **strings,int count);
 
 /* Append item to the specified array/object. */
 extern void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item);
-extern void	mcJSON_AddItemToObject(mcJSON *object,const char *string,mcJSON *item);
-extern void	mcJSON_AddItemToObjectCS(mcJSON *object,const char *string,mcJSON *item);	/* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the mcJSON object */
+extern void mcJSON_AddItemToObject(mcJSON *object,const char *string,mcJSON *item);
+extern void mcJSON_AddItemToObjectCS(mcJSON *object,const char *string,mcJSON *item);	/* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the mcJSON object */
 /* Append reference to item to the specified array/object. Use this when you want to add an existing mcJSON to a new mcJSON, but don't want to corrupt your existing mcJSON. */
 extern void mcJSON_AddItemReferenceToArray(mcJSON *array, mcJSON *item);
-extern void	mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON *item);
+extern void mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON *item);
 
 /* Remove/Detatch items from Arrays/Objects. */
 extern mcJSON *mcJSON_DetachItemFromArray(mcJSON *array,int which);
-extern void   mcJSON_DeleteItemFromArray(mcJSON *array,int which);
+extern void mcJSON_DeleteItemFromArray(mcJSON *array,int which);
 extern mcJSON *mcJSON_DetachItemFromObject(mcJSON *object,const char *string);
-extern void   mcJSON_DeleteItemFromObject(mcJSON *object,const char *string);
+extern void mcJSON_DeleteItemFromObject(mcJSON *object,const char *string);
 
 /* Update array items. */
 extern void mcJSON_InsertItemInArray(mcJSON *array,int which, mcJSON *newitem);	/* Shifts pre-existing items to the right. */
