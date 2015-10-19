@@ -2,12 +2,12 @@ cmake_minimum_required (VERSION 2.6)
 
 project (mcJSON)
 
-subdirs(test)
+subdirs(test buffer)
 
 enable_testing()
 
 add_library(mcjson mcJSON)
-target_link_libraries(mcjson m)
+target_link_libraries(mcjson m molch-buffer)
 
 add_library(mcjson-utils mcJSON_Utils)
 target_link_libraries(mcjson-utils mcjson)
