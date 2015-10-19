@@ -72,7 +72,6 @@ int dofile(char *filename) {
 	file = fopen(filename, "rb");
 	if (file == NULL) {
 		fprintf(stderr, "ERROR: Failed to open file '%s'\n", filename);
-		fclose(file);
 		return 0;
 	}
 	fseek(file, 0, SEEK_END);
