@@ -225,18 +225,59 @@ int main (void) {
 	char text5[] = "[\n	 {\n	 \"precision\": \"zip\",\n	 \"Latitude\":  37.7668,\n	 \"Longitude\": -122.3959,\n	 \"Address\":   \"\",\n	 \"City\":      \"SAN FRANCISCO\",\n	 \"State\":     \"CA\",\n	 \"Zip\":       \"94107\",\n	 \"Country\":   \"US\"\n	 },\n	 {\n	 \"precision\": \"zip\",\n	 \"Latitude\":  37.371991,\n	 \"Longitude\": -122.026020,\n	 \"Address\":   \"\",\n	 \"City\":      \"SUNNYVALE\",\n	 \"State\":     \"CA\",\n	 \"Zip\":       \"94085\",\n	 \"Country\":   \"US\"\n	 }\n	 ]";
 
 	/* Process each json textblock by parsing, then rebuilding: */
-	doit(text1);
-	doit(text2);
-	doit(text3);
-	doit(text4);
-	doit(text5);
+	int status;
+	status = doit(text1);
+	if (status == 0) {
+		fprintf(stderr, "Failed on text1!\n");
+		return EXIT_FAILURE;
+	}
+	status = doit(text2);
+	if (status == 0) {
+		fprintf(stderr, "Failed on text2!\n");
+		return EXIT_FAILURE;
+	}
+	status = doit(text3);
+	if (status == 0) {
+		fprintf(stderr, "Failed on text3!\n");
+		return EXIT_FAILURE;
+	}
+	status = doit(text4);
+	if (status == 0) {
+		fprintf(stderr, "Failed on text4!\n");
+		return EXIT_FAILURE;
+	}
+	status = doit(text5);
+	if (status == 0) {
+		fprintf(stderr, "Failed on text5!\n");
+		return EXIT_FAILURE;
+	}
 
 	/* Parse standard testfiles: */
-	dofile("test-data/test1");
-	dofile("test-data/test2");
-	dofile("test-data/test3");
-	dofile("test-data/test4");
-	dofile("test-data/test5");
+	status = dofile("test-data/test1");
+	if (status == 0) {
+		fprintf(stderr, "Failed on file1!\n");
+		return EXIT_FAILURE;
+	}
+	status = dofile("test-data/test2");
+	if (status == 0) {
+		fprintf(stderr, "Failed on file2!\n");
+		return EXIT_FAILURE;
+	}
+	status = dofile("test-data/test3");
+	if (status == 0) {
+		fprintf(stderr, "Failed on file3!\n");
+		return EXIT_FAILURE;
+	}
+	status = dofile("test-data/test4");
+	if (status == 0) {
+		fprintf(stderr, "Failed on file4!\n");
+		return EXIT_FAILURE;
+	}
+	status = dofile("test-data/test5");
+	if (status == 0) {
+		fprintf(stderr, "Failed on file5!\n");
+		return EXIT_FAILURE;
+	}
 
 	/* Now some samplecode for building objects concisely: */
 	create_objects();
