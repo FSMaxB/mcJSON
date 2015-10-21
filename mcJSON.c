@@ -715,7 +715,7 @@ static char *print_array(mcJSON *item, int depth, int fmt, printbuffer *p) {
 	mcJSON *child = item->child;
 	int numentries = 0;
 	int i = 0;
-	int fail = 0;
+	bool fail = false;
 	size_t tmplen = 0;
 
 	/* How many entries in the array? */
@@ -786,7 +786,7 @@ static char *print_array(mcJSON *item, int depth, int fmt, printbuffer *p) {
 			if (ret) {
 				len += strlen(ret) + 2 + (fmt ? 1 : 0);
 			} else {
-				fail = 1;
+				fail = true;
 			}
 			child = child->next;
 		}
@@ -797,7 +797,7 @@ static char *print_array(mcJSON *item, int depth, int fmt, printbuffer *p) {
 		}
 		/* If that fails, we fail. */
 		if (out == NULL) {
-			fail = 1;
+			fail = true;
 		}
 
 		/* Handle failure. */
@@ -913,7 +913,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 	int j;
 	mcJSON *child = item->child;
 	int numentries = 0;
-	int fail = 0;
+	bool fail = false;
 	size_t tmplen = 0;
 	/* Count the number of entries. */
 	while (child) {
@@ -1041,7 +1041,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 			if (str && ret) {
 				len += strlen(ret) + strlen(str) + 2 + (fmt ? 2 + depth : 0);
 			} else {
-				fail = 1;
+				fail = true;
 			}
 			child = child->next;
 		}
@@ -1051,7 +1051,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 			out = (char*)mcJSON_malloc(len);
 		}
 		if (out == NULL) {
-			fail = 1;
+			fail = true;
 		}
 
 		/* Handle failure */
