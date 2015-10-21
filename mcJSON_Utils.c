@@ -123,8 +123,9 @@ char *mcJSONUtils_FindPointerFromObjectTo(mcJSON *object, mcJSON *target) {
 		char *found = mcJSONUtils_FindPointerFromObjectTo(obj, target);
 		if (found) {
 			if (type == mcJSON_Array) {
-				char *ret = (char*)malloc(strlen(found) + 23);
-				sprintf(ret, "/%d%s", c, found);
+				size_t length = strlen(found) + 23;
+				char *ret = (char*)malloc(length);
+				snprintf(ret, length, "/%d%s", c, found);
 				free(found);
 				return ret;
 			} else if (type == mcJSON_Object) {
@@ -378,8 +379,9 @@ static void mcJSONUtils_GeneratePatch(mcJSON *patches, const char *op, const cha
 	mcJSON *patch = mcJSON_CreateObject();
 	mcJSON_AddItemToObject(patch, "op", mcJSON_CreateString(op));
 	if (suffix) {
-		char *newpath = (char*)malloc(strlen(path) + mcJSONUtils_PointerEncodedstrlen(suffix) + 2);
-		mcJSONUtils_PointerEncodedstrcpy(newpath + sprintf(newpath, "%s/", path), suffix);
+		size_t length = strlen(path) + mcJSONUtils_PointerEncodedstrlen(suffix) + 2;
+		char *newpath = (char*)malloc(length);
+		mcJSONUtils_PointerEncodedstrcpy(newpath + snprintf(newpath, length, "%s/", path), suffix);
 		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(newpath));
 		free(newpath);
 	} else {
@@ -416,13 +418,14 @@ static void mcJSONUtils_CompareToPatch(mcJSON *patches, const char *path, mcJSON
 
 		case mcJSON_Array: {
 			int c;
-			char *newpath = (char*)malloc(strlen(path) + 23); /* Allow space for 64bit int. */
+			size_t length = strlen(path) + 23; /* Allow space for 64bit int. */
+			char *newpath = (char*)malloc(length);
 			for (c = 0, from = from->child, to = to->child; from && to; from = from->next, to = to->next, c++) {
-				sprintf(newpath, "%s/%d", path, c);
+				snprintf(newpath, length, "%s/%d", path, c);
 				mcJSONUtils_CompareToPatch(patches, newpath, from, to);
 			}
 			for (;from;from = from->next, c++) {
-				sprintf(newpath,"%d",c);
+				snprintf(newpath, length, "%d", c);
 				mcJSONUtils_GeneratePatch(patches, "remove", path, newpath, 0);
 			}
 			for (; to; to = to->next, c++) {
@@ -449,8 +452,9 @@ static void mcJSONUtils_CompareToPatch(mcJSON *patches, const char *path, mcJSON
 					diff = mcJSONUtils_strcasecmp(a->string, b->string);
 				}
 				if (diff == 0) {
-					char *newpath = (char*)malloc(strlen(path) + mcJSONUtils_PointerEncodedstrlen(a->string) + 2);
-					mcJSONUtils_PointerEncodedstrcpy(newpath + sprintf(newpath, "%s/", path), a->string);
+					size_t length = strlen(path) + mcJSONUtils_PointerEncodedstrlen(a->string) + 2;
+					char *newpath = (char*)malloc(length);
+					mcJSONUtils_PointerEncodedstrcpy(newpath + snprintf(newpath, length, "%s/", path), a->string);
 					mcJSONUtils_CompareToPatch(patches, newpath, a, b);
 					free(newpath);
 					a = a->next;

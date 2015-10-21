@@ -200,29 +200,31 @@ static char *print_number(mcJSON *item,printbuffer *p) {
 			strcpy(str, "0");
 		}
 	} else if ((fabs(((double)item->valueint) - d) <= DBL_EPSILON) && (d <= INT_MAX) && (d >= INT_MIN)) {
+		static const size_t INT_STRING_SIZE = 21; /* 2^64+1 can be represented in 21 chars. */
 		if (p) {
-			str = ensure(p, 21);
+			str = ensure(p, INT_STRING_SIZE);
 		} else {
-			str = (char*)mcJSON_malloc(21); /* 2^64+1 can be represented in 21 chars. */
+			str = (char*)mcJSON_malloc(INT_STRING_SIZE);
 		}
 		if (str) {
-			sprintf(str, "%d", item->valueint);
+			snprintf(str, INT_STRING_SIZE, "%d", item->valueint);
 		}
 	} else {
+		static const size_t DOUBLE_STRING_SIZE = 64; /* This is a nice tradeoff. */
 		if (p) {
-			str = ensure(p, 64);
+			str = ensure(p, DOUBLE_STRING_SIZE);
 		} else {
-			str = (char*)mcJSON_malloc(64); /* This is a nice tradeoff. */
+			str = (char*)mcJSON_malloc(DOUBLE_STRING_SIZE);
 		}
 		if (str) {
 			if ((fpclassify(d) != FP_ZERO) && (!isnormal(d))) {
-				sprintf(str,"null");
+				snprintf(str, DOUBLE_STRING_SIZE, "null");
 			} else if ((fabs(floor(d) - d) <= DBL_EPSILON) && (fabs(d) < 1.0e60)) {
-				sprintf(str, "%.0f", d);
+				snprintf(str, DOUBLE_STRING_SIZE, "%.0f", d);
 			} else if ((fabs(d) < 1.0e-6) || (fabs(d) > 1.0e9)) {
-				sprintf(str, "%e", d);
+				snprintf(str, DOUBLE_STRING_SIZE, "%e", d);
 			} else {
-				sprintf(str,"%f",d);
+				snprintf(str, DOUBLE_STRING_SIZE, "%f", d);
 			}
 		}
 	}
