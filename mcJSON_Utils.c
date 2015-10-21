@@ -111,7 +111,7 @@ static void mcJSONUtils_PointerEncodedstrcpy(char *d, const char *s) {
 char *mcJSONUtils_FindPointerFromObjectTo(mcJSON *object, mcJSON *target) {
 	mcJSON_Type type = object->type;
 	int c = 0;
-	mcJSON *obj = 0;
+	mcJSON *obj = NULL;
 
 	if (object == target) {
 		char *empty = malloc(1);
@@ -137,10 +137,10 @@ char *mcJSONUtils_FindPointerFromObjectTo(mcJSON *object, mcJSON *target) {
 				return ret;
 			}
 			free(found);
-			return 0;
+			return NULL;
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 mcJSON *mcJSONUtils_GetPointer(mcJSON *object, const char *pointer) {
@@ -151,7 +151,7 @@ mcJSON *mcJSONUtils_GetPointer(mcJSON *object, const char *pointer) {
 				which = (10 * which) + *pointer++ - '0';
 			}
 			if (*pointer && (*pointer != '/')) {
-				return 0;
+				return NULL;
 			}
 			object = mcJSON_GetArrayItem(object, which);
 		} else if (object->type == mcJSON_Object) {
@@ -163,7 +163,7 @@ mcJSON *mcJSONUtils_GetPointer(mcJSON *object, const char *pointer) {
 				pointer++;
 			}
 		} else {
-			return 0;
+			return NULL;
 		}
 	}
 	return object;
@@ -185,10 +185,10 @@ static void mcJSONUtils_InplaceDecodePointerString(char *string) {
 }
 
 static mcJSON *mcJSONUtils_PatchDetach(mcJSON *object, const char *path) {
-	char *parentptr = 0;
-	char *childptr = 0;
-	mcJSON *parent = 0;
-	mcJSON *ret = 0;
+	char *parentptr = NULL;
+	char *childptr = NULL;
+	mcJSON *parent = NULL;
+	mcJSON *ret = NULL;
 
 	parentptr = malloc(strlen(path) + 1);
 	strcpy(parentptr, path);
@@ -203,7 +203,7 @@ static mcJSON *mcJSONUtils_PatchDetach(mcJSON *object, const char *path) {
 	mcJSONUtils_InplaceDecodePointerString(childptr);
 
 	if (parent == NULL) { /* Couldn't find object to remove child from. */
-		ret = 0;
+		ret = NULL;
 	} else if (parent->type == mcJSON_Array) {
 		ret = mcJSON_DetachItemFromArray(parent, atoi(childptr));
 	} else if (parent->type == mcJSON_Object) {
@@ -259,13 +259,13 @@ static int mcJSONUtils_Compare(mcJSON *a, mcJSON *b) {
 }
 
 static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
-	mcJSON *op = 0;
-	mcJSON *path = 0;
-	mcJSON *value = 0;
-	mcJSON *parent = 0;
+	mcJSON *op = NULL;
+	mcJSON *path = NULL;
+	mcJSON *value = NULL;
+	mcJSON *parent = NULL;
 	int opcode = 0;
-	char *parentptr = 0;
-	char *childptr = 0;
+	char *parentptr = NULL;
+	char *childptr = NULL;
 
 	op = mcJSON_GetObjectItem(patch, "op");
 	path = mcJSON_GetObjectItem(patch, "path");
@@ -515,13 +515,13 @@ static mcJSON *mcJSONUtils_SortList(mcJSON *list) {
 		}
 	}
 	if (second && second->prev) {
-		second->prev->next = 0; /* Split the lists */
+		second->prev->next = NULL; /* Split the lists */
 	}
 
 	first = mcJSONUtils_SortList(first); /* Recursively sort the sub-lists. */
 	second = mcJSONUtils_SortList(second);
-	list = 0;
-	ptr = 0;
+	list = NULL;
+	ptr = NULL;
 
 	while (first && second) {/* Merge the sub-lists */
 		if (mcJSONUtils_strcasecmp((char*)first->string->content, (char*)second->string->content) < 0) {
