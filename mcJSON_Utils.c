@@ -105,7 +105,7 @@ static void mcJSONUtils_PointerEncodedstrcpy(char *d, const char *s) {
 			*d++ = *s;
 		}
 	}
-	*d = 0;
+	*d = '\0';
 }
 
 char *mcJSONUtils_FindPointerFromObjectTo(mcJSON *object, mcJSON *target) {
@@ -181,7 +181,7 @@ static void mcJSONUtils_InplaceDecodePointerString(char *string) {
 			*s2 = '/';
 		}
 	}
-	*s2 = 0;
+	*s2 = '\0';
 }
 
 static mcJSON *mcJSONUtils_PatchDetach(mcJSON *object, const char *path) {
@@ -194,7 +194,7 @@ static mcJSON *mcJSONUtils_PatchDetach(mcJSON *object, const char *path) {
 	strcpy(parentptr, path);
 	childptr = strrchr(parentptr, '/');
 	if (childptr) {
-		*childptr++ = 0;
+		*childptr++ = '\0';
 	} else {
 		free(parentptr);
 		return ret;
@@ -334,7 +334,7 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 	strcpy(parentptr, (char*)path->valuestring->content);
 	childptr = strrchr(parentptr, '/');
 	if (childptr) {
-		*childptr++ = 0;
+		*childptr++ = '\0';
 	} else {
 		free(parentptr);
 		mcJSON_Delete(value);

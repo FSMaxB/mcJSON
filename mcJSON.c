@@ -422,7 +422,7 @@ static char *print_string_ptr(const char *str, printbuffer *p) {
 		*ptr2++ = '\"';
 		strcpy(ptr2, str);
 		ptr2[len] = '\"';
-		ptr2[len + 1] = 0;
+		ptr2[len + 1] = '\0';
 		return out;
 	}
 
@@ -483,7 +483,7 @@ static char *print_string_ptr(const char *str, printbuffer *p) {
 		}
 	}
 	*ptr2++ = '\"';
-	*ptr2++ = 0;
+	*ptr2++ = '\0';
 	return out;
 }
 /* Invote print_string_ptr (which is useful) on an item. */
@@ -759,7 +759,7 @@ static char *print_array(mcJSON *item, int depth, int fmt, printbuffer *p) {
 				if (fmt) {
 					*ptr++ = ' ';
 				}
-				*ptr = 0;
+				*ptr = '\0';
 				p->offset += len;
 			}
 			child = child->next;
@@ -769,7 +769,7 @@ static char *print_array(mcJSON *item, int depth, int fmt, printbuffer *p) {
 			return NULL;
 		}
 		*ptr++ = ']';
-		*ptr = 0;
+		*ptr = '\0';
 		out = (p->buffer) + i;
 	} else {
 		/* Allocate an array to hold the values for each */
@@ -814,7 +814,7 @@ static char *print_array(mcJSON *item, int depth, int fmt, printbuffer *p) {
 		/* Compose the output array. */
 		*out = '[';
 		ptr = out + 1;
-		*ptr = 0;
+		*ptr = '\0';
 		for (i = 0; i < numentries; i++) {
 			tmplen = strlen(entries[i]);
 			memcpy(ptr, entries[i], tmplen);
@@ -824,13 +824,13 @@ static char *print_array(mcJSON *item, int depth, int fmt, printbuffer *p) {
 				if (fmt) {
 					*ptr++ = ' ';
 				}
-				*ptr = 0;
+				*ptr = '\0';
 			}
 			mcJSON_free(entries[i]);
 		}
 		mcJSON_free(entries);
 		*ptr++ = ']';
-		*ptr++ = 0;
+		*ptr++ = '\0';
 	}
 	return out;
 }
@@ -954,7 +954,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 		if (fmt) {
 			*ptr++ = '\n';
 		}
-		*ptr = 0;
+		*ptr = '\0';
 		p->offset += len;
 		child = item->child;
 		depth++;
@@ -997,7 +997,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 			if (fmt) {
 				*ptr++ = '\n';
 			}
-			*ptr = 0;
+			*ptr = '\0';
 			p->offset += len;
 			child = child->next;
 		}
@@ -1011,7 +1011,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 			}
 		}
 		*ptr++ = '}';
-		*ptr = 0;
+		*ptr = '\0';
 		out = (p->buffer) + i;
 	} else {
 		/* Allocate space for the names and the objects */
@@ -1075,7 +1075,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 		if (fmt) {
 			*ptr++ = '\n';
 		}
-		*ptr = 0;
+		*ptr = '\0';
 		for (i = 0; i < numentries; i++) {
 			if (fmt) {
 				for (j = 0;j < depth; j++) {
@@ -1097,7 +1097,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 			if (fmt) {
 				*ptr++ = '\n';
 			}
-			*ptr = 0;
+			*ptr = '\0';
 			mcJSON_free(names[i]);
 			mcJSON_free(entries[i]);
 		}
@@ -1109,7 +1109,8 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 				*ptr++ = '\t';
 			}
 		}
-		*ptr++ = '}';*ptr++=0;
+		*ptr++ = '}';
+		*ptr++ = '\0';
 	}
 	return out;
 }
@@ -1544,5 +1545,5 @@ void mcJSON_Minify(char *json) {
 			*into++ = *json++;
 		}
 	}
-	*into = 0; /* and null-terminate. */
+	*into = '\0'; /* and null-terminate. */
 }
