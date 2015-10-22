@@ -55,9 +55,20 @@ int doit(char *text) {
 		return 0;
 	} else {
 		out = mcJSON_Print(json);
-		mcJSON_Delete(json);
 		printf("%s\n", out);
 		free(out);
+
+		//Do the same thing unformatted
+		out = mcJSON_PrintUnformatted(json);
+		printf("%s\n", out);
+		free(out);
+
+		//Do the same thing buffered
+		out = mcJSON_PrintBuffered(json, 20, 1);
+		printf("%s\n", out);
+		free(out);
+
+		mcJSON_Delete(json);
 	}
 	return 1;
 }
