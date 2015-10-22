@@ -152,7 +152,7 @@ static char* ensure(buffer_t *buffer, size_t needed) {
 	}
 	needed += buffer->position;
 
-	int status = buffer_resize_on_heap(buffer, pow2gt(needed));
+	int status = buffer_grow_on_heap(buffer, pow2gt(needed));
 	if (status != 0) {
 		return NULL;
 	}
