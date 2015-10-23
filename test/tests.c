@@ -42,68 +42,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "common.h"
 #include "../mcJSON.h"
-
-/* Parse text to JSON, then render back to text, and print! */
-int doit(char *text) {
-	char *out;
-	mcJSON *json;
-
-	json = mcJSON_Parse(text);
-	if (json == NULL) {
-		fprintf(stderr, "Error before: [%s]\n", mcJSON_GetErrorPtr());
-		return 0;
-	} else {
-		out = mcJSON_Print(json);
-		printf("%s\n", out);
-		free(out);
-
-		//Do the same thing unformatted
-		out = mcJSON_PrintUnformatted(json);
-		printf("%s\n", out);
-		free(out);
-
-		//Do the same thing buffered
-		out = mcJSON_PrintBuffered(json, 20, 1);
-		printf("%s\n", out);
-		free(out);
-
-		mcJSON_Delete(json);
-	}
-	return 1;
-}
-
-/* Read a file, parse, render back, etc. */
-int dofile(char *filename) {
-	FILE *file;
-	size_t length;
-	char *data;
-
-	//read the file
-	file = fopen(filename, "rb");
-	if (file == NULL) {
-		fprintf(stderr, "ERROR: Failed to open file '%s'\n", filename);
-		return 0;
-	}
-	fseek(file, 0, SEEK_END);
-	length = ftell(file);
-	fseek(file, 0, SEEK_SET);
-	data = (char*)malloc(length + 1);
-	size_t read_length = fread(data, 1, length, file);
-	if ((read_length != length) || (ferror(file) != 0)) {
-		fprintf(stderr, "Error occured while reading file '%s'!\n", filename);
-		fclose(file);
-		free(data);
-		return 0;
-	}
-	//nullterminate the string
-	data[length] = '\0';
-	fclose(file);
-	int status = doit(data);
-	free(data);
-
-	return status;
-}
 
 /* Used by some code below as an example datatype. */
 struct record {
@@ -259,33 +200,6 @@ int main (void) {
 	status = doit(text5);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text5!\n");
-		return EXIT_FAILURE;
-	}
-
-	/* Parse standard testfiles: */
-	status = dofile("test-data/test1");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file1!\n");
-		return EXIT_FAILURE;
-	}
-	status = dofile("test-data/test2");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file2!\n");
-		return EXIT_FAILURE;
-	}
-	status = dofile("test-data/test3");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file3!\n");
-		return EXIT_FAILURE;
-	}
-	status = dofile("test-data/test4");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file4!\n");
-		return EXIT_FAILURE;
-	}
-	status = dofile("test-data/test5");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file5!\n");
 		return EXIT_FAILURE;
 	}
 
