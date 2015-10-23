@@ -49,6 +49,8 @@
 #include <ctype.h>
 #include "mcJSON.h"
 
+#include <assert.h>
+
 /* error pointer, points to the position
    in the input where the error happened */
 static const char *ep;
@@ -152,14 +154,14 @@ static char* ensure(buffer_t *buffer, size_t needed) {
 	}
 	needed += buffer->position;
 
+	/* necessary for now as the functions working with the buffer
+	   don't update the length, TODO make this better */
+	buffer->content_length = buffer->buffer_length;
+
 	int status = buffer_grow_on_heap(buffer, pow2gt(needed));
 	if (status != 0) {
 		return NULL;
 	}
-
-	/* necessary for now as the functions working with the buffer
-	   don't update the length, TODO make this better */
-	buffer->content_length = buffer->buffer_length;
 
 	return (char*)buffer->content + buffer->position;
 }
@@ -176,48 +178,72 @@ static int update(buffer_t *buffer) {
 
 /* Render the number nicely from the given item into a string. */
 static char *print_number(mcJSON *item, buffer_t *buffer) {
-	char *str = NULL;
+	buffer_t *output = NULL;
 	double d = item->valuedouble;
 	if (d == 0) { /* zero */
 		if (buffer != NULL) {
-			str = ensure(buffer, 2);
+			ensure(buffer, 2);
+			output = buffer;
 		} else {
-			str = (char*)mcJSON_malloc(2); /* special case for 0. */
+			output = buffer_create_on_heap(2, 2); /* special case for 0. */
 		}
-		if (str != NULL) {
-			strcpy(str, "0");
+		if (output != NULL) {
+			if (buffer_copy_from_raw(output, output->position, (unsigned char*)"0", 0, 2) != 0) {
+				if (buffer != NULL) {
+					buffer_destroy_from_heap(output);
+				}
+				return NULL;
+			}
+		} else {
+			return NULL;
 		}
 	} else if ((fabs(((double)item->valueint) - d) <= DBL_EPSILON) && (d <= INT_MAX) && (d >= INT_MIN)) {
 		/* number is an integer */
 		static const size_t INT_STRING_SIZE = 21; /* 2^64+1 can be represented in 21 chars. */
 		if (buffer != NULL) {
-			str = ensure(buffer, INT_STRING_SIZE);
+			ensure(buffer, INT_STRING_SIZE);
+			output = buffer;
 		} else {
-			str = (char*)mcJSON_malloc(INT_STRING_SIZE);
+			output = buffer_create_on_heap(INT_STRING_SIZE, 0);
 		}
-		if (str != NULL) {
-			snprintf(str, INT_STRING_SIZE, "%d", item->valueint);
+		if (output != NULL) {
+			snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%d", item->valueint);
+		} else {
+			return NULL;
 		}
 	} else {
 		static const size_t DOUBLE_STRING_SIZE = 64; /* This is a nice tradeoff. */
 		if (buffer != NULL) {
-			str = ensure(buffer, DOUBLE_STRING_SIZE);
+			ensure(buffer, DOUBLE_STRING_SIZE);
+			output = buffer;
 		} else {
-			str = (char*)mcJSON_malloc(DOUBLE_STRING_SIZE);
+			output = buffer_create_on_heap(DOUBLE_STRING_SIZE, 0);
 		}
-		if (str) {
+		if (output != NULL) {
 			if ((fpclassify(d) != FP_ZERO) && (!isnormal(d))) {
-				snprintf(str, DOUBLE_STRING_SIZE, "null");
+				if (buffer_copy_from_raw(output, output->position, (unsigned char*)"null", 0, 5) != 0) {
+					if (buffer != NULL) {
+						buffer_destroy_from_heap(output);
+					}
+					return NULL;
+				}
 			} else if ((fabs(floor(d) - d) <= DBL_EPSILON) && (fabs(d) < 1.0e60)) {
-				snprintf(str, DOUBLE_STRING_SIZE, "%.0f", d);
+				snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%.0f", d);
 			} else if ((fabs(d) < 1.0e-6) || (fabs(d) > 1.0e9)) {
-				snprintf(str, DOUBLE_STRING_SIZE, "%e", d);
+				snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%e", d);
 			} else {
-				snprintf(str, DOUBLE_STRING_SIZE, "%f", d);
+				snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%f", d);
 			}
+		} else {
+			return NULL;
 		}
 	}
-	return str;
+
+	char *out = (char*)output->content + output->position;
+	if (buffer == NULL) {
+		free(output); //free buffer_t struct
+	}
+	return out;
 }
 
 //TODO does this work with both big and little endian?
