@@ -335,6 +335,10 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 	childptr = strrchr(parentptr, '/');
 	if (childptr) {
 		*childptr++ = 0;
+	} else {
+		free(parentptr);
+		mcJSON_Delete(value);
+		return 10;
 	}
 	parent = mcJSONUtils_GetPointer(object, parentptr);
 	mcJSONUtils_InplaceDecodePointerString(childptr);
