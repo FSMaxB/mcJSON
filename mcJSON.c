@@ -188,6 +188,7 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 			output = buffer_create_on_heap(2, 2); /* special case for 0. */
 		}
 		if (output != NULL) {
+			output->content_length = output->position + 1;
 			if (buffer_copy_from_raw(output, output->position, (unsigned char*)"0", 0, 2) != 0) {
 				if (buffer != NULL) {
 					buffer_destroy_from_heap(output);
@@ -221,6 +222,7 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 		}
 		if (output != NULL) {
 			if ((fpclassify(d) != FP_ZERO) && (!isnormal(d))) {
+				output->content_length = output->position + 1;
 				if (buffer_copy_from_raw(output, output->position, (unsigned char*)"null", 0, 5) != 0) {
 					if (buffer != NULL) {
 						buffer_destroy_from_heap(output);
