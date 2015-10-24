@@ -59,6 +59,7 @@ int dofile(char *input, char *output) {
 	status = ftell(input_file);
 	if (status == -1) {
 		fprintf(stderr, "ERROR: Failed to get length of file '%s'\n", input);
+		fclose(input_file);;
 		return 0;
 	}
 	size_t length = (size_t) status;
