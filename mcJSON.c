@@ -261,7 +261,7 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 
 	char *out = (char*)output->content + output->position;
 	if (buffer == NULL) {
-		free(output); //free buffer_t struct
+		mcJSON_free(output); //free buffer_t struct
 	}
 	return out;
 }
@@ -460,7 +460,7 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 
 		char *out = (char*) output->content + start_position;
 		if (buffer == NULL) { /* unbuffered */
-			free(output); /* free the buffer_t struct */
+			mcJSON_free(output); /* free the buffer_t struct */
 		}
 		return out;
 	}
@@ -521,7 +521,7 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 
 		char *out = (char*) output->content + start_position;
 		if (buffer == NULL) { /* unbuffered */
-			free(output); /* free the buffer_t struct */
+			mcJSON_free(output); /* free the buffer_t struct */
 		}
 		return out;
 	}
@@ -607,7 +607,7 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 
 	char *out = (char*) output->content + start_position;
 	if (buffer == NULL) { /* unbuffered */
-		free(output); /* free the buffer_t struct */
+		mcJSON_free(output); /* free the buffer_t struct */
 	}
 
 	return out;
@@ -679,7 +679,7 @@ char *mcJSON_PrintUnformatted(mcJSON *item) {
 char *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, int fmt) {
 	buffer_t *buffer = buffer_create_on_heap(prebuffer, prebuffer);
 	char *output = print_value(item, 0, fmt, buffer);
-	free(buffer); //free the buffer_t struct
+	mcJSON_free(buffer); //free the buffer_t struct
 	return output;
 }
 
