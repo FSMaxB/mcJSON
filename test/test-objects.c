@@ -177,27 +177,27 @@ int main (void) {
 
 	/* Process each json textblock by parsing, then rebuilding: */
 	int status;
-	status = doit(text1);
+	status = doit(text1, NULL);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text1!\n");
 		return EXIT_FAILURE;
 	}
-	status = doit(text2);
+	status = doit(text2, NULL);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text2!\n");
 		return EXIT_FAILURE;
 	}
-	status = doit(text3);
+	status = doit(text3, NULL);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text3!\n");
 		return EXIT_FAILURE;
 	}
-	status = doit(text4);
+	status = doit(text4, NULL);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text4!\n");
 		return EXIT_FAILURE;
 	}
-	status = doit(text5);
+	status = doit(text5, NULL);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text5!\n");
 		return EXIT_FAILURE;

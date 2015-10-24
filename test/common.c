@@ -49,10 +49,10 @@
 
 
 /* Parse text to JSON, then render back to text, and print! */
-int doit(char *text) {
+int doit(char *text, FILE *output_file) {
 	char *out;
-	mcJSON *json;
 
+	mcJSON *json;
 	json = mcJSON_Parse(text);
 	if (json == NULL) {
 		fprintf(stderr, "Error before: [%s]\n", mcJSON_GetErrorPtr());
@@ -60,16 +60,25 @@ int doit(char *text) {
 	} else {
 		out = mcJSON_Print(json);
 		printf("%s\n", out);
+		if (output_file != NULL) {
+			fprintf(output_file, "%s\n", out);
+		}
 		free(out);
 
 		//Do the same thing unformatted
 		out = mcJSON_PrintUnformatted(json);
 		printf("%s\n", out);
+		if (output_file != NULL) {
+			fprintf(output_file, "%s\n", out);
+		}
 		free(out);
 
 		//Do the same thing buffered
 		out = mcJSON_PrintBuffered(json, 20, 1);
 		printf("%s\n", out);
+		if (output_file != NULL) {
+			fprintf(output_file, "%s\n", out);
+		}
 		free(out);
 
 		mcJSON_Delete(json);

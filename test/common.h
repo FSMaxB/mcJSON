@@ -44,6 +44,7 @@
 #define TEST_COMMON_H
 
 
-/* Parse text to JSON, then render back to text, and print! */
-int doit(char *text);
+/* Parse text to JSON, then render back to text, and print!
+ * Also print to output_file if it isnt NULL*/
+int doit(char *text, FILE *output_file);
 #endif

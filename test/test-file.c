@@ -47,32 +47,45 @@
 
 
 /* Read a file, parse, render back, etc. */
-int dofile(char *filename) {
-	FILE *file;
+int dofile(char *input, char *output) {
+	//read the file
 	size_t length;
 	char *data;
 
-	//read the file
-	file = fopen(filename, "rb");
-	if (file == NULL) {
-		fprintf(stderr, "ERROR: Failed to open file '%s'\n", filename);
+	FILE *input_file = fopen(input, "rb");
+	if (input_file == NULL) {
+		fprintf(stderr, "ERROR: Failed to open file '%s'\n", input);
 		return 0;
 	}
-	fseek(file, 0, SEEK_END);
-	length = ftell(file);
-	fseek(file, 0, SEEK_SET);
+	fseek(input_file, 0, SEEK_END);
+	length = ftell(input_file);
+	fseek(input_file, 0, SEEK_SET);
 	data = (char*)malloc(length + 1);
-	size_t read_length = fread(data, 1, length, file);
-	if ((read_length != length) || (ferror(file) != 0)) {
-		fprintf(stderr, "Error occured while reading file '%s'!\n", filename);
-		fclose(file);
+	size_t read_length = fread(data, 1, length, input_file);
+	if ((read_length != length) || (ferror(input_file) != 0)) {
+		fprintf(stderr, "Error occured while reading file '%s'!\n", input);
+		fclose(input_file);
 		free(data);
 		return 0;
 	}
+
+	//create output file
+	FILE *output_file = fopen(output, "w");
+	if (output_file == NULL) {
+		fprintf(stderr, "ERROR: Failed to open file '%s'!\n", output);
+		fclose(input_file);
+		free(data);
+		return 0;
+	}
+
 	//nullterminate the string
 	data[length] = '\0';
-	fclose(file);
-	int status = doit(data);
+	fclose(input_file);
+
+
+	//now do the tests
+	int status = doit(data, output_file);
+	fclose(output_file);
 	free(data);
 
 	return status;
@@ -91,13 +104,13 @@ struct record {
 };
 
 int main (int argc, char **argv) {
-	if (argc != 2) {
+	if (argc != 3) {
 		fprintf(stderr, "ERROR: Invalid arguments!\n");
-		fprintf(stderr, "Usage: %s filename\n", argv[0]);
+		fprintf(stderr, "Usage: %s input output\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
-	int status = dofile(argv[1]);
+	int status = dofile(argv[1], argv[2]);
 	if (status == 0) {
 		fprintf(stderr, "ERROR: Failed to process file! (%i)\n", status);
 		return EXIT_FAILURE;

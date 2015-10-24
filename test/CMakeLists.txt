@@ -24,9 +24,9 @@ add_executable(test-file test-file common)
 target_link_libraries(test-file mcjson)
 foreach(json-file ${json-files})
     add_test(NAME "test-file-${json-file}"
-        COMMAND "${CMAKE_CURRENT_BINARY_DIR}/test-file" "test-data/${json-file}")
+        COMMAND "${CMAKE_CURRENT_BINARY_DIR}/test-file" "test-data/${json-file}" "test-data/${json-file}.out")
     if(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
         add_test(NAME "test-file-${json-file}-valgrind"
-            COMMAND "${MEMORYCHECK_COMMAND}" ${MEMORYCHECK_COMMAND_OPTIONS} "${CMAKE_CURRENT_BINARY_DIR}/test-file" "test-data/${json-file}")
+            COMMAND "${MEMORYCHECK_COMMAND}" ${MEMORYCHECK_COMMAND_OPTIONS} "${CMAKE_CURRENT_BINARY_DIR}/test-file" "test-data/${json-file}" "test-data/${json-file}.out")
     endif(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
 endforeach(json-file ${json-files})
