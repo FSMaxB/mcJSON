@@ -380,6 +380,19 @@ static char *print_string_ptr(const char *str, printbuffer *p) {
 	int flag = 0;
 	unsigned char token;
 
+	if (str == NULL) {
+		if (p) {
+			out = ensure(p, 3);
+		} else {
+			out = (char*)mcJSON_malloc(3);
+		}
+		if (out == NULL) {
+			return 0;
+		}
+		strcpy(out, "\"\"");
+		return out;
+	}
+
 	for (ptr = str; *ptr != '\0'; ptr++) {
 		flag |= (((*ptr > 0) && (*ptr < 32)) || (*ptr == '\"') || (*ptr == '\\')) ? 1 : 0;
 	}
@@ -401,18 +414,6 @@ static char *print_string_ptr(const char *str, printbuffer *p) {
 		return out;
 	}
 
-	if (str == NULL) {
-		if (p) {
-			out = ensure(p, 3);
-		} else {
-			out = (char*)mcJSON_malloc(3);
-		}
-		if (out == NULL) {
-			return 0;
-		}
-		strcpy(out, "\"\"");
-		return out;
-	}
 	ptr = str;
 	while ((token = *ptr) && ++len) {
 		if (strchr("\"\\\b\f\n\r\t", token)) {
