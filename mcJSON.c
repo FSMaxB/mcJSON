@@ -182,62 +182,80 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 	double d = item->valuedouble;
 	if (d == 0) { /* zero */
 		if (buffer != NULL) {
-			ensure(buffer, 2);
+			if(ensure(buffer, 2) == NULL) {
+				if (buffer->content != NULL) {
+					buffer->content[buffer->position] = '\0';
+				}
+				return NULL;
+			}
 			output = buffer;
 		} else {
 			output = buffer_create_on_heap(2, 2); /* special case for 0. */
 		}
-		if (output != NULL) {
-			output->content_length = output->position + 1;
-			if (buffer_copy_from_raw(output, output->position, (unsigned char*)"0", 0, 2) != 0) {
-				if (buffer != NULL) {
-					buffer_destroy_from_heap(output);
-				}
-				return NULL;
+		if (output == NULL) {
+			return NULL;
+		}
+
+		output->content_length = output->position + 1;
+		if (buffer_copy_from_raw(output, output->position, (unsigned char*)"0", 0, 2) != 0) {
+			output->content[output->position] = '\0';
+			if (buffer != NULL) {
+				buffer_destroy_from_heap(output);
 			}
-		} else {
 			return NULL;
 		}
 	} else if ((fabs(((double)item->valueint) - d) <= DBL_EPSILON) && (d <= INT_MAX) && (d >= INT_MIN)) {
 		/* number is an integer */
 		static const size_t INT_STRING_SIZE = 21; /* 2^64+1 can be represented in 21 chars. */
 		if (buffer != NULL) {
-			ensure(buffer, INT_STRING_SIZE);
+			if (ensure(buffer, INT_STRING_SIZE) == NULL) {
+				if (buffer->content != NULL) {
+					buffer->content[buffer->position] = '\0';
+				}
+				return NULL;
+			}
 			output = buffer;
 		} else {
 			output = buffer_create_on_heap(INT_STRING_SIZE, 0);
 		}
-		if (output != NULL) {
-			snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%d", item->valueint);
-		} else {
+		if (output == NULL) {
 			return NULL;
 		}
+
+		snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%d", item->valueint);
 	} else {
 		static const size_t DOUBLE_STRING_SIZE = 64; /* This is a nice tradeoff. */
 		if (buffer != NULL) {
-			ensure(buffer, DOUBLE_STRING_SIZE);
+			if (ensure(buffer, DOUBLE_STRING_SIZE) == NULL) {
+				if (buffer->content != NULL) {
+					buffer->content[buffer->position] = '\0';
+				}
+				return NULL;
+			}
 			output = buffer;
 		} else {
 			output = buffer_create_on_heap(DOUBLE_STRING_SIZE, 0);
 		}
-		if (output != NULL) {
-			if ((fpclassify(d) != FP_ZERO) && (!isnormal(d))) {
-				output->content_length = output->position + 1;
-				if (buffer_copy_from_raw(output, output->position, (unsigned char*)"null", 0, 5) != 0) {
-					if (buffer != NULL) {
-						buffer_destroy_from_heap(output);
-					}
-					return NULL;
-				}
-			} else if ((fabs(floor(d) - d) <= DBL_EPSILON) && (fabs(d) < 1.0e60)) {
-				snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%.0f", d);
-			} else if ((fabs(d) < 1.0e-6) || (fabs(d) > 1.0e9)) {
-				snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%e", d);
-			} else {
-				snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%f", d);
-			}
-		} else {
+		if (output == NULL) {
 			return NULL;
+		}
+		if ((fpclassify(d) != FP_ZERO) && (!isnormal(d))) {
+			output->content_length = output->position + 1;
+			if (buffer_copy_from_raw(output, output->position, (unsigned char*)"null", 0, 5) != 0) {
+				if (output->content != NULL) {
+					output->content[output->position] = '\0';
+				}
+				if (buffer != NULL) {
+					buffer_destroy_from_heap(output);
+				}
+				return NULL;
+			}
+		} else if ((fabs(floor(d) - d) <= DBL_EPSILON) && (fabs(d) < 1.0e60)) {
+			snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%.0f", d);
+		} else if ((fabs(d) < 1.0e-6) || (fabs(d) > 1.0e9)) {
+			snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%e", d);
+		} else {
+			snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%f", d);
 		}
 	}
 
@@ -417,7 +435,9 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 		if (buffer != NULL) {
 			start_position = buffer->position;
 			if (ensure(buffer, 3) == NULL) {
-				buffer->content[buffer->position] = '\0';
+				if (buffer->content != NULL) {
+					buffer->content[buffer->position] = '\0';
+				}
 				return NULL;
 			}
 			output = buffer;
@@ -431,6 +451,7 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 		/* fill with empty string */
 		output->content_length = output->position + 1;
 		if (buffer_copy_from_raw(output, output->position, (unsigned char*)"\"\"", 0, 3) != 0) {
+			output->content[output->position] = '\0';
 			if (buffer == NULL) {
 				buffer_destroy_from_heap(output);
 			}
@@ -460,7 +481,9 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 	if (buffer != NULL) { /* buffered */
 		start_position = buffer->position;
 		if (ensure(buffer, string->content_length + additional_characters + 3) == NULL) {
-			buffer->content[buffer->position] = '\0';
+			if (buffer->content != NULL) {
+				buffer->content[buffer->position] = '\0';
+			}
 			return NULL;
 		}
 		output = buffer;
@@ -705,22 +728,31 @@ static char *print_value(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 	if (buffer != NULL) { /* buffered printing */
 		switch ((item->type) & 255) {
 			case mcJSON_NULL:
-				out = ensure(buffer, 5);
-				if (out) {
-					strncpy(out, "null", 5);
+				if ((out = ensure(buffer, 5)) == NULL) {
+					if (buffer->content != NULL) {
+						buffer->content[buffer->position] = '\0';
+					}
+					return NULL;
 				}
+				strncpy(out, "null", 5);
 				break;
 			case mcJSON_False:
-				out = ensure(buffer, 6);
-				if (out) {
-					strncpy(out, "false", 6);
+				if ((out = ensure(buffer, 6)) == NULL) {
+					if (buffer->content != NULL) {
+						buffer->content[buffer->position] = '\0';
+					}
+					return NULL;
 				}
+				strncpy(out, "false", 6);
 				break;
 			case mcJSON_True:
-				out = ensure(buffer, 5);
-				if (out) {
-					strncpy(out, "true", 5);
+				if ((out = ensure(buffer, 5)) == NULL) {
+					if (buffer->content != NULL) {
+						buffer->content[buffer->position] = '\0';
+					}
+					return NULL;
 				}
+				strncpy(out, "true", 5);
 				break;
 			case mcJSON_Number:
 				out = print_number(item, buffer);
@@ -829,7 +861,12 @@ static char *print_array(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 	/* Explicitly handle numentries==0 */
 	if (numentries == 0) {
 		if (buffer != NULL) {
-			out = ensure(buffer, 3);
+			if((out = ensure(buffer, 3)) == NULL) {
+				if (buffer->content != NULL) {
+					buffer->content[buffer->position] = '\0';
+				}
+				return NULL;
+			}
 		} else {
 			out = (char*)mcJSON_malloc(3);
 		}
@@ -842,8 +879,10 @@ static char *print_array(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 	if (buffer != NULL) {
 		/* Compose the output array. */
 		i = buffer->position;
-		ptr = ensure(buffer, 1);
-		if (ptr == NULL) {
+		if ((ptr = ensure(buffer, 1)) == NULL) {
+			if (buffer->content != NULL) {
+				buffer->content[buffer->position] = '\0';
+			}
 			return NULL;
 		}
 		*ptr = '[';
@@ -854,8 +893,10 @@ static char *print_array(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 			buffer->position = update(buffer);
 			if (child->next) {
 				len = fmt ? 2 : 1;
-				ptr = ensure(buffer, len + 1);
-				if (ptr == NULL) {
+				if ((ptr = ensure(buffer, len + 1)) == NULL) {
+					if (buffer->content != NULL) {
+						buffer->content[buffer->position] = '\0';
+					}
 					return NULL;
 				}
 				*ptr++ = ',';
@@ -867,8 +908,10 @@ static char *print_array(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 			}
 			child = child->next;
 		}
-		ptr = ensure(buffer, 2);
-		if (ptr == NULL) {
+		if ((ptr = ensure(buffer, 2)) == NULL) {
+			if (buffer->content != NULL) {
+				buffer->content[buffer->position] = '\0';
+			}
 			return NULL;
 		}
 		*ptr++ = ']';
@@ -1026,7 +1069,11 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 	/* Explicitly handle empty object case */
 	if (numentries == 0) {
 		if (buffer != NULL) {
-			out = ensure(buffer, fmt ? depth + 4 : 3);
+			if ((out = ensure(buffer, fmt ? depth + 4 : 3)) == NULL) {
+				if (buffer->content != NULL) {
+					buffer->content[buffer->position] = '\0';
+				}
+			}
 		} else {
 			out = (char*)mcJSON_malloc(fmt ? depth + 4 : 3);
 		}
@@ -1049,8 +1096,10 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 		/* Compose the output: */
 		i = buffer->position;
 		len = fmt ? 2 : 1;
-		ptr = ensure(buffer, len + 1);
-		if (ptr == NULL) {
+		if ((ptr = ensure(buffer, len + 1)) == NULL) {
+			if (buffer->content != NULL) {
+				buffer->content[buffer->position] = '\0';
+			}
 			return NULL;
 		}
 		*ptr++ = '{';
@@ -1063,8 +1112,10 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 		depth++;
 		while (child) {
 			if (fmt) {
-				ptr = ensure(buffer, depth);
-				if (ptr == NULL) {
+				if ((ptr = ensure(buffer, depth)) == NULL) {
+					if (buffer->content != NULL) {
+						buffer->content[buffer->position] = '\0';
+					}
 					return NULL;
 				}
 				for (j = 0; j < depth; j++) {
@@ -1076,8 +1127,10 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 			buffer->position = update(buffer);
 
 			len = fmt ? 2 : 1;
-			ptr = ensure(buffer, len);
-			if (ptr == NULL) {
+			if ((ptr = ensure(buffer, len)) == NULL) {
+				if (buffer->content != NULL) {
+					buffer->content[buffer->position] = '\0';
+				}
 				return NULL;
 			}
 			*ptr++ = ':';
@@ -1090,8 +1143,10 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 			buffer->position= update(buffer);
 
 			len = (fmt ? 1 : 0) + (child->next ? 1 : 0);
-			ptr = ensure(buffer, len + 1);
-			if (ptr == NULL) {
+			if ((ptr = ensure(buffer, len + 1)) == NULL) {
+				if (buffer->content != NULL) {
+					buffer->content[buffer->position] = '\0';
+				}
 				return NULL;
 			}
 			if (child->next) {
@@ -1104,8 +1159,10 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 			buffer->position += len;
 			child = child->next;
 		}
-		ptr = ensure(buffer, fmt ? (depth + 1) : 2);
-		if (ptr == NULL) {
+		if ((ptr = ensure(buffer, fmt ? (depth + 1) : 2)) == NULL) {
+			if (buffer->content != NULL) {
+				buffer->content[buffer->position] = '\0';
+			}
 			return NULL;
 		}
 		if (fmt) {
