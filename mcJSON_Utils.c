@@ -360,7 +360,7 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 
 int mcJSONUtils_ApplyPatches(mcJSON *object, mcJSON *patches) {
 	int err;
-	if (patches->type != mcJSON_Array) { /* malformed patches. */
+	if ((patches == NULL) || (patches->type != mcJSON_Array)) { /* malformed patches. */
 		return 1;
 	}
 	if (patches) {
