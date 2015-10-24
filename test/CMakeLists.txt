@@ -29,4 +29,6 @@ foreach(json-file ${json-files})
         add_test(NAME "test-file-${json-file}-valgrind"
             COMMAND "${MEMORYCHECK_COMMAND}" ${MEMORYCHECK_COMMAND_OPTIONS} "${CMAKE_CURRENT_BINARY_DIR}/test-file" "test-data/${json-file}" "test-data/${json-file}.out")
     endif(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
+    add_test(NAME "test-file-${json-file}-comparison"
+        COMMAND cmake -E compare_files "${CMAKE_CURRENT_BINARY_DIR}/test-data/${json-file}.out" "${CMAKE_CURRENT_BINARY_DIR}/test-data/${json-file}.ref")
 endforeach(json-file ${json-files})
