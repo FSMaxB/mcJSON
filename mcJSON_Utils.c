@@ -214,6 +214,9 @@ static mcJSON *mcJSONUtils_PatchDetach(mcJSON *object, const char *path) {
 }
 
 static int mcJSONUtils_Compare(mcJSON *a, mcJSON *b) {
+	if ((a == NULL) || (b == NULL)) { /* undefined */
+		return -2;
+	}
 	if (a->type != b->type) { /* mismatched type. */
 		return -1;
 	}
@@ -332,6 +335,10 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 	childptr = strrchr(parentptr, '/');
 	if (childptr) {
 		*childptr++ = 0;
+	} else {
+		free(parentptr);
+		mcJSON_Delete(value);
+		return 10;
 	}
 	parent = mcJSONUtils_GetPointer(object, parentptr);
 	mcJSONUtils_InplaceDecodePointerString(childptr);
@@ -360,7 +367,7 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 
 int mcJSONUtils_ApplyPatches(mcJSON *object, mcJSON *patches) {
 	int err;
-	if (patches->type != mcJSON_Array) { /* malformed patches. */
+	if ((patches == NULL) || (patches->type != mcJSON_Array)) { /* malformed patches. */
 		return 1;
 	}
 	if (patches) {

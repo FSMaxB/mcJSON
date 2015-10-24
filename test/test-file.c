@@ -49,18 +49,26 @@
 /* Read a file, parse, render back, etc. */
 int dofile(char *input, char *output) {
 	//read the file
-	size_t length;
-	char *data;
-
 	FILE *input_file = fopen(input, "rb");
 	if (input_file == NULL) {
 		fprintf(stderr, "ERROR: Failed to open file '%s'\n", input);
 		return 0;
 	}
 	fseek(input_file, 0, SEEK_END);
-	length = ftell(input_file);
+	int status;
+	status = ftell(input_file);
+	if (status == -1) {
+		fprintf(stderr, "ERROR: Failed to get length of file '%s'\n", input);
+		return 0;
+	}
+	size_t length = (size_t) status;
 	fseek(input_file, 0, SEEK_SET);
+	char *data;
 	data = (char*)malloc(length + 1);
+	if (data == NULL) {
+		fclose(input_file);
+		return 0;
+	}
 	size_t read_length = fread(data, 1, length, input_file);
 	if ((read_length != length) || (ferror(input_file) != 0)) {
 		fprintf(stderr, "Error occured while reading file '%s'!\n", input);
@@ -87,7 +95,7 @@ int dofile(char *input, char *output) {
 
 
 	//now do the tests
-	int status = doit(data, output_file);
+	status = doit(data, output_file);
 	if (output_file != NULL) {
 		fclose(output_file);
 	}
