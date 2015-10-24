@@ -506,8 +506,6 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 			output->content[output->position] = '\0';
 			if (buffer == NULL) {
 				buffer_destroy_from_heap(output);
-			} else {
-				buffer->position = start_position;
 			}
 			return NULL;
 		}
@@ -545,8 +543,6 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 				output->content[output->position] = '\0';
 				if (buffer == NULL) {
 					buffer_destroy_from_heap(output);
-				} else {
-					buffer->position = start_position;
 				}
 				return NULL;
 			}
@@ -578,8 +574,6 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 						output->content[output->position] = '\0';
 						if (buffer == NULL) {
 							buffer_destroy_from_heap(output);
-						} else {
-							buffer->position = start_position;
 						}
 						return NULL;
 					}
@@ -595,8 +589,6 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 		output->content[output->position] = '\0';
 		if (buffer == NULL) {
 			buffer_destroy_from_heap(output);
-		} else {
-			buffer->position = start_position;
 		}
 		return NULL;
 	}
