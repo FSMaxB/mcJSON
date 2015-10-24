@@ -50,7 +50,6 @@
 int dofile(char *input, char *output) {
 	//read the file
 	size_t length;
-	char *data;
 
 	FILE *input_file = fopen(input, "rb");
 	if (input_file == NULL) {
@@ -60,7 +59,12 @@ int dofile(char *input, char *output) {
 	fseek(input_file, 0, SEEK_END);
 	length = ftell(input_file);
 	fseek(input_file, 0, SEEK_SET);
+	char *data;
 	data = (char*)malloc(length + 1);
+	if (data == NULL) {
+		fclose(input_file);
+		return 0;
+	}
 	size_t read_length = fread(data, 1, length, input_file);
 	if ((read_length != length) || (ferror(input_file) != 0)) {
 		fprintf(stderr, "Error occured while reading file '%s'!\n", input);
