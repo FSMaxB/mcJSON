@@ -45,7 +45,22 @@
 #include <string.h>
 #include "../mcJSON_Utils.h"
 
-int main(void) {
+int main(int argc, char **argv) {
+	if ((argc != 1) && (argc != 2)) {
+		fprintf(stderr, "ERROR: Invalid arguments!\n");
+		fprintf(stderr, "Usage: %s [output_file]\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	FILE *output_file = NULL;
+	if ((argc == 2) && (argv[1] != NULL)) {
+		output_file = fopen(argv[1], "w");
+		if (output_file == NULL) {
+			fprintf(stderr, "ERROR: Failed to open file '%s'\n", argv[1]);
+			return EXIT_FAILURE;
+		}
+	}
+
 	int i;
 	/* JSON Pointer tests: */
 	mcJSON *root;
@@ -95,22 +110,51 @@ int main(void) {
 	mcJSON *sortme;
 
 	printf("JSON Pointer Tests\n");
+	if (output_file != NULL) {
+		fprintf(output_file, "JSON Pointer Tests\n");
+	}
 	root = mcJSON_Parse(json);
 	for (i = 0; i < 12; i++) {
 		char *output = mcJSON_Print(mcJSONUtils_GetPointer(root, tests[i]));
-		printf("Test %d:\n%s\n\n", i + 1,output);
+		if (output == NULL) {
+			fprintf(stderr, "ERROR: JSON Pointer Test %d failed!\n", i + 1);
+			mcJSON_Delete(root);
+			if (output_file != NULL) {
+				fclose(output_file);
+			}
+			return EXIT_FAILURE;
+		}
+		printf("Test %d:\n%s\n\n", i + 1, output);
+		if (output_file != NULL) {
+			fprintf(output_file, "Test %d:\n%s\n\n", i + 1, output);
+		}
 		free(output);
 	}
 	mcJSON_Delete(root);
 
 
 	printf("JSON Apply Patch Tests\n");
+	if (output_file != NULL) {
+		fprintf(output_file, "JSON Apply Patch Tests\n");
+	}
 	for (i = 0; i < 15; i++) {
 		mcJSON *object = mcJSON_Parse(patches[i][0]);
 		mcJSON *patch = mcJSON_Parse(patches[i][1]);
 		int err = mcJSONUtils_ApplyPatches(object, patch);
 		char *output = mcJSON_Print(object);
+		if (output == NULL) {
+			fprintf(stderr, "ERROR: JSON Apply Patch Test %d failed!\n", i + 1);
+			mcJSON_Delete(object);
+			mcJSON_Delete(patch);
+			if (output_file != NULL) {
+				fclose(output_file);
+			}
+			return EXIT_FAILURE;
+		}
 		printf("Test %d (err %d):\n%s\n\n", i + 1, err, output);
+		if (output_file != NULL) {
+			fprintf(output_file, "Test %d (err %d):\n%s\n\n", i + 1, err, output);
+		}
 		free(output);
 		mcJSON_Delete(object);
 		mcJSON_Delete(patch);
@@ -118,6 +162,9 @@ int main(void) {
 
 	/* JSON Generate Patch tests: */
 	printf("JSON Generate Patch Tests\n");
+	if (output_file != NULL) {
+		fprintf(output_file, "JSON Generate Patch Tests\n");
+	}
 	for (i = 0; i < 15; i++) {
 		mcJSON *from;
 		mcJSON *to;
@@ -130,7 +177,20 @@ int main(void) {
 		to = mcJSON_Parse(patches[i][2]);
 		patch = mcJSONUtils_GeneratePatches(from, to);
 		out = mcJSON_Print(patch);
+		if (out == NULL) {
+			fprintf(stderr, "ERROR: JSON Generate Path Test %d failed!\n", i + 1);
+			mcJSON_Delete(from);
+			mcJSON_Delete(to);
+			mcJSON_Delete(patch);
+			if (output_file != NULL) {
+				fclose(output_file);
+			}
+			return EXIT_FAILURE;
+		}
 		printf("Test %d: (patch: %s):\n%s\n\n", i + 1, patches[i][1], out);
+		if (output_file != NULL) {
+			fprintf(output_file, "Test %d: (patch: %s):\n%s\n\n", i + 1, patches[i][1], out);
+		}
 		free(out);
 		mcJSON_Delete(from);
 		mcJSON_Delete(to);
@@ -139,20 +199,67 @@ int main(void) {
 
 	/* Misc tests: */
 	printf("JSON Pointer construct\n");
+	if (output_file != NULL) {
+		fprintf(output_file, "JSON Pointer construct\n");
+	}
 	object = mcJSON_CreateObject();
 	nums = mcJSON_CreateIntArray(numbers, 10);
 	num6 = mcJSON_GetArrayItem(nums, 6);
 	mcJSON_AddItemToObject(object, "numbers", nums);
 	char *temp = mcJSONUtils_FindPointerFromObjectTo(object, num6);
+	if (temp == NULL) {
+		fprintf(stderr, "ERROR: JSON Pointer construct 1 failed!\n");
+		free(temp);
+		mcJSON_Delete(nums);
+		mcJSON_Delete(num6);
+		mcJSON_Delete(object);
+		if (output_file != NULL) {
+			fclose(output_file);
+		}
+		return EXIT_FAILURE;
+	}
 	printf("Pointer: [%s]\n", temp);
+	if (output_file != NULL) {
+		fprintf(output_file, "Pointer: [%s]\n", temp);
+	}
 	free(temp);
 	temp = mcJSONUtils_FindPointerFromObjectTo(object, nums);
+	if (temp == NULL) {
+		fprintf(stderr, "ERROR: JSON Pointer construct 1 failed!\n");
+		free(temp);
+		mcJSON_Delete(nums);
+		mcJSON_Delete(num6);
+		mcJSON_Delete(object);
+		if (output_file != NULL) {
+			fclose(output_file);
+		}
+		return EXIT_FAILURE;
+	}
 	printf("Pointer: [%s]\n", temp);
+	if (output_file != NULL) {
+		fprintf(output_file, "Pointer: [%s]\n", temp);
+	}
 	free(temp);
 	temp = mcJSONUtils_FindPointerFromObjectTo(object, object);
+	if (temp == NULL) {
+		fprintf(stderr, "ERROR: JSON Pointer construct 1 failed!\n");
+		free(temp);
+		mcJSON_Delete(nums);
+		mcJSON_Delete(num6);
+		mcJSON_Delete(object);
+		if (output_file != NULL) {
+			fclose(output_file);
+		}
+		return EXIT_FAILURE;
+	}
 	printf("Pointer: [%s]\n", temp);
+	if (output_file != NULL) {
+		fprintf(output_file, "Pointer: [%s]\n", temp);
+	}
 	free(temp);
 	mcJSON_Delete(object);
+
+	/*TODO do some cleanup */
 
 	/* JSON Sort test: */
 	sortme = mcJSON_CreateObject();
@@ -164,7 +271,16 @@ int main(void) {
 	mcJSONUtils_SortObject(sortme);
 	after = mcJSON_PrintUnformatted(sortme);
 	printf("Before: [%s]\nAfter: [%s]\n\n", before, after);
+	if (output_file != NULL) {
+		fprintf(output_file, "Before: [%s]\nAfter: [%s]\n\n", before, after);
+	}
 	free(before);
 	free(after);
 	mcJSON_Delete(sortme);
+
+	if (output_file != NULL) {
+		fclose(output_file);
+	}
+
+	return EXIT_SUCCESS;
 }

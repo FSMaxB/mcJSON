@@ -5,19 +5,28 @@ cmake_minimum_required (VERSION 2.6)
 #and the variables are actually set.
 add_subdirectory(test-data)
 
-#generic tests
-set(tests test-objects test_utils)
+#test-objects
+add_executable(test-objects test-objects common)
+target_link_libraries(test-objects mcjson)
+add_test(NAME test-objects
+    COMMAND "${CMAKE_CURRENT_BINARY_DIR}/test-objects")
+if(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
+    add_test(NAME "test-objects-valgrind"
+        COMMAND "${MEMORYCHECK_COMMAND}" ${MEMORYCHECK_COMMAND_OPTIONS} "${CMAKE_CURRENT_BINARY_DIR}/test-objects")
+endif(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
 
-foreach(test ${tests})
-    add_executable(${test} ${test} common)
-    target_link_libraries(${test} mcjson mcjson-utils)
-    add_test(NAME ${test}
-        COMMAND "${CMAKE_CURRENT_BINARY_DIR}/${test}")
-    if(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
-        add_test(NAME "${test}-valgrind"
-            COMMAND "${MEMORYCHECK_COMMAND}" ${MEMORYCHECK_COMMAND_OPTIONS} "${CMAKE_CURRENT_BINARY_DIR}/${test}")
-    endif(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
-endforeach(test)
+#test_utils
+add_executable(test_utils test_utils)
+target_link_libraries(test_utils mcjson-utils)
+add_test(NAME test-utils
+    COMMAND "${CMAKE_CURRENT_BINARY_DIR}/test_utils" "test_utils.out")
+if(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
+    add_test(NAME "test-utils-valgrind"
+        COMMAND "${MEMORYCHECK_COMMAND}" ${MEMORYCHECK_COMMAND_OPTIONS} "${CMAKE_CURRENT_BINARY_DIR}/test_utils" "test_utils.out")
+endif(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
+execute_process(COMMAND cmake -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/test_utils.ref" "${CMAKE_CURRENT_BINARY_DIR}/test_utils.ref")
+add_test(NAME test_utils-comparison
+    COMMAND cmake -E compare_files "${CMAKE_CURRENT_BINARY_DIR}/test_utils.out" "${CMAKE_CURRENT_BINARY_DIR}/test_utils.ref")
 
 #file tests
 add_executable(test-file test-file common)

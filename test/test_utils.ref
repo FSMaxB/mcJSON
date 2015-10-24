@@ -1,0 +1,238 @@
+JSON Pointer Tests
+Test 1:
+{
+	"foo":	["bar", "baz"],
+	"":	0,
+	"a/b":	1,
+	"c%d":	2,
+	"e^f":	3,
+	"g|h":	4,
+	"i\\j":	5,
+	"k\"l":	6,
+	" ":	7,
+	"m~n":	8
+}
+
+Test 2:
+["bar", "baz"]
+
+Test 3:
+"bar"
+
+Test 4:
+0
+
+Test 5:
+1
+
+Test 6:
+2
+
+Test 7:
+3
+
+Test 8:
+4
+
+Test 9:
+5
+
+Test 10:
+6
+
+Test 11:
+7
+
+Test 12:
+8
+
+JSON Apply Patch Tests
+Test 1 (err 0):
+{
+	"foo":	"bar",
+	"baz":	"qux"
+}
+
+Test 2 (err 0):
+{
+	"foo":	["bar", "qux", "baz"]
+}
+
+Test 3 (err 0):
+{
+	"foo":	"bar"
+}
+
+Test 4 (err 0):
+{
+	"foo":	["bar", "baz"]
+}
+
+Test 5 (err 0):
+{
+	"foo":	"bar",
+	"baz":	"boo"
+}
+
+Test 6 (err 0):
+{
+	"foo":	{
+		"bar":	"baz"
+	},
+	"qux":	{
+		"corge":	"grault",
+		"thud":	"fred"
+	}
+}
+
+Test 7 (err 0):
+{
+	"foo":	["all", "cows", "eat", "grass"]
+}
+
+Test 8 (err 0):
+{
+	"baz":	"qux",
+	"foo":	["a", 2, "c"]
+}
+
+Test 9 (err -3):
+{
+	"baz":	"qux"
+}
+
+Test 10 (err 0):
+{
+	"foo":	"bar",
+	"child":	{
+		"grandchild":	{
+	}
+	}
+}
+
+Test 11 (err 0):
+{
+	"foo":	"bar",
+	"baz":	"qux"
+}
+
+Test 12 (err 9):
+{
+	"foo":	"bar"
+}
+
+Test 13 (err 0):
+{
+	"/":	9,
+	"~1":	10
+}
+
+Test 14 (err -1):
+{
+	"/":	9,
+	"~1":	10
+}
+
+Test 15 (err 0):
+{
+	"foo":	["bar", ["abc", "def"]]
+}
+
+JSON Generate Patch Tests
+Test 1: (patch: [{ "op": "add", "path": "/baz", "value": "qux" }]):
+[{
+		"op":	"add",
+		"path":	"/baz",
+		"value":	"qux"
+	}]
+
+Test 2: (patch: [{ "op": "add", "path": "/foo/1", "value": "qux" }]):
+[{
+		"op":	"replace",
+		"path":	"/foo/1",
+		"value":	"qux"
+	}, {
+		"op":	"add",
+		"path":	"/foo/-",
+		"value":	"baz"
+	}]
+
+Test 3: (patch:  [{ "op": "remove", "path": "/baz" }]):
+[{
+		"op":	"remove",
+		"path":	"/baz"
+	}]
+
+Test 4: (patch: [{ "op": "remove", "path": "/foo/1" }]):
+[{
+		"op":	"replace",
+		"path":	"/foo/1",
+		"value":	"baz"
+	}, {
+		"op":	"remove",
+		"path":	"/foo/2"
+	}]
+
+Test 5: (patch: [{ "op": "replace", "path": "/baz", "value": "boo" }]):
+[{
+		"op":	"replace",
+		"path":	"/baz",
+		"value":	"boo"
+	}]
+
+Test 6: (patch: [{ "op": "move", "from": "/foo/waldo", "path": "/qux/thud" }]):
+[{
+		"op":	"remove",
+		"path":	"/foo/waldo"
+	}, {
+		"op":	"add",
+		"path":	"/qux/thud",
+		"value":	"fred"
+	}]
+
+Test 7: (patch: [ { "op": "move", "from": "/foo/1", "path": "/foo/3" }]):
+[{
+		"op":	"replace",
+		"path":	"/foo/1",
+		"value":	"cows"
+	}, {
+		"op":	"replace",
+		"path":	"/foo/2",
+		"value":	"eat"
+	}, {
+		"op":	"replace",
+		"path":	"/foo/3",
+		"value":	"grass"
+	}]
+
+Test 10: (patch: [{ "op": "add", "path": "/child", "value": { "grandchild": { } } }]):
+[{
+		"op":	"add",
+		"path":	"/child",
+		"value":	{
+			"grandchild":	{
+		}
+		}
+	}]
+
+Test 11: (patch: [{ "op": "add", "path": "/baz", "value": "qux", "xyz": 123 }]):
+[{
+		"op":	"add",
+		"path":	"/baz",
+		"value":	"qux"
+	}]
+
+Test 15: (patch: [ { "op": "add", "path": "/foo/-", "value": ["abc", "def"] }]):
+[{
+		"op":	"add",
+		"path":	"/foo/-",
+		"value":	["abc", "def"]
+	}]
+
+JSON Pointer construct
+Pointer: [/numbers/6]
+Pointer: [/numbers]
+Pointer: []
+Before: [{"Q":1,"W":1,"E":1,"R":1,"T":1,"Y":1,"U":1,"I":1,"O":1,"P":1,"A":1,"S":1,"D":1,"F":1,"G":1,"H":1,"J":1,"K":1,"L":1,"Z":1,"X":1,"C":1,"V":1,"B":1,"N":1,"M":1}]
+After: [{"A":1,"B":1,"C":1,"D":1,"E":1,"F":1,"G":1,"H":1,"I":1,"J":1,"K":1,"L":1,"M":1,"N":1,"O":1,"P":1,"Q":1,"R":1,"S":1,"T":1,"U":1,"V":1,"W":1,"X":1,"Y":1,"Z":1}]
+
