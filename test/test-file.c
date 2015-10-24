@@ -90,33 +90,18 @@ struct record {
 	const char *country;
 };
 
-int main (void) {
-	/* Parse standard testfiles: */
-	int status = dofile("test-data/test1.json");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file1!\n");
-		return EXIT_FAILURE;
-	}
-	status = dofile("test-data/test2.json");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file2!\n");
-		return EXIT_FAILURE;
-	}
-	status = dofile("test-data/test3.json");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file3!\n");
-		return EXIT_FAILURE;
-	}
-	status = dofile("test-data/test4.json");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file4!\n");
-		return EXIT_FAILURE;
-	}
-	status = dofile("test-data/test5.json");
-	if (status == 0) {
-		fprintf(stderr, "Failed on file5!\n");
+int main (int argc, char **argv) {
+	if (argc != 2) {
+		fprintf(stderr, "ERROR: Invalid arguments!\n");
+		fprintf(stderr, "Usage: %s filename\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
-	return 0;
+	int status = dofile(argv[1]);
+	if (status == 0) {
+		fprintf(stderr, "ERROR: Failed to process file! (%i)\n", status);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }
