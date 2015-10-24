@@ -2,6 +2,7 @@ mcJSON
 ======
 
 [![Travis Build Status](https://travis-ci.org/FSMaxB/mcJSON.svg?branch=master)](https://travis-ci.org/FSMaxB/mcJSON)
+[![Coverity Scan Build](https://scan.coverity.com/projects/6759/badge.svg)](https://scan.coverity.com/projects/6759)
 
 mcJSON is a Fork of [cJSON](http://sourceforge.net/projects/cjson/) with the goal of making it fit for creating JSON containing cryptographic keys and other confidential data without leaking this confidential data.
 
