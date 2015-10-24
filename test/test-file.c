@@ -70,12 +70,15 @@ int dofile(char *input, char *output) {
 	}
 
 	//create output file
-	FILE *output_file = fopen(output, "w");
-	if (output_file == NULL) {
-		fprintf(stderr, "ERROR: Failed to open file '%s'!\n", output);
-		fclose(input_file);
-		free(data);
-		return 0;
+	FILE *output_file = NULL;
+	if (output != NULL) { //only if filename is given
+		output_file = fopen(output, "w");
+		if (output_file == NULL) {
+			fprintf(stderr, "ERROR: Failed to open file '%s'!\n", output);
+			fclose(input_file);
+			free(data);
+			return 0;
+		}
 	}
 
 	//nullterminate the string
@@ -85,7 +88,9 @@ int dofile(char *input, char *output) {
 
 	//now do the tests
 	int status = doit(data, output_file);
-	fclose(output_file);
+	if (output_file != NULL) {
+		fclose(output_file);
+	}
 	free(data);
 
 	return status;
@@ -104,13 +109,18 @@ struct record {
 };
 
 int main (int argc, char **argv) {
-	if (argc != 3) {
+	if ((argc != 2) && (argc != 3)) {
 		fprintf(stderr, "ERROR: Invalid arguments!\n");
-		fprintf(stderr, "Usage: %s input output\n", argv[0]);
+		fprintf(stderr, "Usage: %s input [output]\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
-	int status = dofile(argv[1], argv[2]);
+	int status;
+	if (argc == 2) {
+		status = dofile(argv[1], NULL);
+	} else {
+		status = dofile(argv[1], argv[2]);
+	}
 	if (status == 0) {
 		fprintf(stderr, "ERROR: Failed to process file! (%i)\n", status);
 		return EXIT_FAILURE;
