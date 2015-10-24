@@ -214,6 +214,9 @@ static mcJSON *mcJSONUtils_PatchDetach(mcJSON *object, const char *path) {
 }
 
 static int mcJSONUtils_Compare(mcJSON *a, mcJSON *b) {
+	if ((a == NULL) || (b == NULL)) { /* undefined */
+		return -2;
+	}
 	if (a->type != b->type) { /* mismatched type. */
 		return -1;
 	}
