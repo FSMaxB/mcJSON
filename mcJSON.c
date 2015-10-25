@@ -402,108 +402,195 @@ static const char *parse_string(mcJSON *item, const char *str) {
 
 /* Render the cstring provided to an escaped version that can be printed. */
 static char *print_string_ptr(const char *str, buffer_t *buffer) {
-	const char *ptr;
-	char *ptr2;
-	char *out;
-	int len = 0;
-	int flag = 0;
-	unsigned char token;
+	size_t start_position = 0; /* position relative to output buffer where the output starts */
 
+	buffer_t *output = NULL;
+	buffer_t *string = NULL;
 	if (str == NULL) {
-		if (buffer != NULL) {
-			out = ensure(buffer, 3);
-		} else {
-			out = (char*)mcJSON_malloc(3);
-		}
-		if (out == NULL) {
-			return NULL;
-		}
-		strcpy(out, "\"\"");
-		return out;
-	}
-
-	for (ptr = str; *ptr != '\0'; ptr++) {
-		flag |= (((*ptr > 0) && (*ptr < 32)) || (*ptr == '\"') || (*ptr == '\\')) ? 1 : 0;
-	}
-	if (!flag) {
-		len = ptr - str;
-		if (buffer != NULL) {
-			out = ensure(buffer, len + 3);
-		} else {
-			out = (char*)mcJSON_malloc(len + 3);
-		}
-		if (out == NULL) {
-			return NULL;
-		}
-		ptr2 = out;
-		*ptr2++ = '\"';
-		strcpy(ptr2, str);
-		ptr2[len] = '\"';
-		ptr2[len + 1] = '\0';
-		return out;
-	}
-
-	ptr = str;
-	while ((token = *ptr) && ++len) {
-		if (strchr("\"\\\b\f\n\r\t", token)) {
-			len++;
-		} else if (token < 32) {
-			len += 5;
-		}
-		ptr++;
-	}
-
-	if (buffer != NULL) {
-		out = ensure(buffer, len + 3);
+		string = buffer_create_with_existing_array(NULL, 0);
 	} else {
-		out = (char*)mcJSON_malloc(len + 3);
+		string = buffer_create_with_existing_array((unsigned char*) str, strlen(str));
 	}
-	if (out == NULL) {
+
+	/* empty string */
+	if (string->content_length == 0) {
+		if (buffer != NULL) {
+			start_position = buffer->position;
+			if (ensure(buffer, 3) == NULL) {
+				buffer->content[buffer->position] = '\0';
+				return NULL;
+			}
+			output = buffer;
+		} else {
+			output = buffer_create_on_heap(3, 3);
+		}
+		if ((output == NULL) || (output->content == NULL)) {
+			return NULL;
+		}
+
+		/* fill with empty string */
+		output->content_length = output->position + 1;
+		if (buffer_copy_from_raw(output, output->position, (unsigned char*)"\"\"", 0, 3) != 0) {
+			if (buffer == NULL) {
+				buffer_destroy_from_heap(output);
+			}
+			return NULL;
+		}
+
+		char *out = (char*) output->content + start_position;
+		if (buffer == NULL) { /* unbuffered */
+			free(output); /* free the buffer_t struct */
+		}
+		return out;
+	}
+
+	/* get the number of additional characters needed to encode special characters */
+	size_t additional_characters = 0; /* number of additional chars needed for escaping */
+	for (string->position = 0; string->position < string->content_length; string->position++) {
+		if (strchr("\"\\\b\f\n\r\t", string->content[string->position])) {
+			/* additional space for '\\' needed */
+			additional_characters++;
+		} else if (string->content[string->position] < 32) {
+			/* "\\uXXXX" -> 5 additional characters */
+			additional_characters += 5;
+		}
+	}
+
+	/* allocate output */
+	if (buffer != NULL) { /* buffered */
+		start_position = buffer->position;
+		if (ensure(buffer, string->content_length + additional_characters + 3) == NULL) {
+			buffer->content[buffer->position] = '\0';
+			return NULL;
+		}
+		output = buffer;
+	} else { /* unbuffered */
+		output = buffer_create_on_heap(string->content_length + additional_characters + 3, string->content_length + additional_characters + 3);
+	}
+	if ((output == NULL) || (output->content == NULL)) {
 		return NULL;
 	}
 
-	ptr2 = out;
-	ptr = str;
-	*ptr2++ = '\"';
-	while (*ptr != '\0') {
-		if (((unsigned char)*ptr > 31) && (*ptr != '\"') && (*ptr != '\\')) {
-			*ptr2++ = *ptr++;
+	/* no special characters */
+	if (additional_characters == 0) {
+		/* start double quotes */
+		output->content[output->position] = '\"';
+		output->position++;
+
+		/* copy the content */
+		output->content_length = output->position + 1;
+		if ((buffer_copy(output, output->position, string, 0, string->content_length)) != 0) {
+			output->content[output->position] = '\0';
+			if (buffer == NULL) {
+				buffer_destroy_from_heap(output);
+			} else {
+				buffer->position = start_position;
+			}
+			return NULL;
+		}
+		output->position += string->content_length;
+
+		/* end double quotes and terminate with '\0' */
+		output->content[output->position] = '\"';
+		output->position++;
+		output->content[output->position] = '\0';
+		output->content_length = output->position + 1;
+
+		char *out = (char*) output->content + start_position;
+		if (buffer == NULL) { /* unbuffered */
+			free(output); /* free the buffer_t struct */
+		}
+		return out;
+	}
+
+	/* start output with double quote */
+	output->content[output->position] = '\"';
+	output->position++;
+	for (string->position = 0; (string->position < string->content_length) && (output->position < output->buffer_length); string->position++, output->position++) {
+		if ((string->content[string->position] > 31)
+				&& (string->content[string->position] != '\"')
+				&& (string->content[string->position] != '\\')) {
+			/* normal characters, just print it to the output */
+			output->content[output->position] = string->content[string->position];
 		} else {
-			*ptr2++ = '\\';
-			switch (token = *ptr++) {
+			/* special characters that need to be escaped */
+			output->content[output->position] = '\\';
+			output->position++;
+
+			/* check for out of bounds in the output */
+			if ((output->position + 1) > output->buffer_length) {
+				output->content[output->position] = '\0';
+				if (buffer == NULL) {
+					buffer_destroy_from_heap(output);
+				} else {
+					buffer->position = start_position;
+				}
+				return NULL;
+			}
+
+			switch (string->content[string->position]) {
 				case '\\':
-					*ptr2++ = '\\';
+					output->content[output->position] = '\\';
 					break;
 				case '\"':
-					*ptr2++ = '\"';
+					output->content[output->position] = '\"';
 					break;
 				case '\b':
-					*ptr2++ = 'b';
+					output->content[output->position] = 'b';
 					break;
 				case '\f':
-					*ptr2++ = 'f';
+					output->content[output->position] = 'f';
 					break;
 				case '\n':
-					*ptr2++ = 'n';
+					output->content[output->position] = 'n';
 					break;
 				case '\r':
-					*ptr2++ = 'r';
+					output->content[output->position] = 'r';
 					break;
 				case '\t':
-					*ptr2++ = 't';
+					output->content[output->position] = 't';
 					break;
 				default: /* escape and print */
-					sprintf(ptr2, "u%04x", token);
-					ptr2 += 5;
+					if ((output->position + 6) > output->buffer_length) {
+						output->content[output->position] = '\0';
+						if (buffer == NULL) {
+							buffer_destroy_from_heap(output);
+						} else {
+							buffer->position = start_position;
+						}
+						return NULL;
+					}
+					snprintf((char*)output->content + output->position, 6, "u%04x", string->content[string->position]);
+					output->position += 4; /* not +5 because the loop does this for us. */
 					break;
 			}
 		}
 	}
-	*ptr2++ = '\"';
-	*ptr2++ = '\0';
+
+	/* add closing double quote and terminating '\0' */
+	if ((output->position + 2) > output->buffer_length) {
+		output->content[output->position] = '\0';
+		if (buffer == NULL) {
+			buffer_destroy_from_heap(output);
+		} else {
+			buffer->position = start_position;
+		}
+		return NULL;
+	}
+	output->content[output->position] = '\"';
+	output->position++;
+	output->content[output->position] = '\0';
+	output->content_length = output->position + 1;
+
+	char *out = (char*) output->content + start_position;
+	if (buffer == NULL) { /* unbuffered */
+		free(output); /* free the buffer_t struct */
+	}
+
 	return out;
 }
-/* Invote print_string_ptr (which is useful) on an item. */
+
+/* Invoke print_string_ptr (which is useful) on an item. */
 static char *print_string(mcJSON *item, buffer_t *buffer) {
 	return print_string_ptr((char*)item->valuestring->content, buffer);
 }
