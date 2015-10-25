@@ -834,142 +834,191 @@ static const char *parse_array(mcJSON *item, const char *value) {
 
 /* Render an array to text */
 static char *print_array(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) {
-	char **entries;
-	char *out=0;
-	char *ptr;
-	char *ret;
-	int len = 5;
+	if (item == NULL) {
+		return NULL;
+	}
+
+	buffer_t *output = NULL;
+
+	size_t start_position = 0; /* position relative to output buffer where the output starts */
 	mcJSON *child = item->child;
-	int numentries = 0;
-	int i = 0;
-	bool fail = false;
-	size_t tmplen = 0;
 
 	/* How many entries in the array? */
-	while (child) {
+	size_t numentries = 0;
+	while (child != NULL) {
 		numentries++;
 		child = child->next;
 	}
-	/* Explicitly handle numentries==0 */
-	if (numentries == 0) {
+
+	/* Explicitly handle numentries == 0 */
+	if (numentries == 0) { /* empty array */
 		if (buffer != NULL) {
-			if((out = ensure(buffer, 3)) == NULL) {
+			start_position = buffer->position;
+			if (ensure(buffer, 3) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
 				}
 				return NULL;
 			}
+			output = buffer;
 		} else {
-			out = (char*)mcJSON_malloc(3);
+			output = buffer_create_on_heap(3, 3);
 		}
-		if (out) {
-			strncpy(out, "[]", 3);
+		if (output == NULL) {
+			return NULL;
+		}
+
+		/* fill with empty array */
+		output->content_length = output->position + 1;
+		if (buffer_copy_from_raw(output, output->position, (unsigned char*)"[]", 0, 3) != 0) {
+			if (output->content != NULL) {
+				output->content[output->position] = '\0';
+			}
+			if (buffer == NULL) {
+				buffer_destroy_from_heap(output);
+			}
+			return NULL;
+		}
+
+		char *out = (char*) output->content + start_position;
+		if (buffer == NULL) { /* unbuffered */
+			mcJSON_free(output); /* free the buffer_t struct */
 		}
 		return out;
 	}
 
+	/* buffered */
 	if (buffer != NULL) {
-		/* Compose the output array. */
-		i = buffer->position;
-		if ((ptr = ensure(buffer, 1)) == NULL) {
+		/* allocate the buffer */
+		start_position = buffer->position;
+		if (ensure(buffer, 1) == NULL) {
 			if (buffer->content != NULL) {
 				buffer->content[buffer->position] = '\0';
 			}
 			return NULL;
 		}
-		*ptr = '[';
+
+		/* start with opening brace */
+		buffer->content[buffer->position] = '[';
 		buffer->position++;
+
 		child = item->child;
-		while (child && !fail) {
-			print_value(child, depth + 1, fmt, buffer);
-			buffer->position = update(buffer);
-			if (child->next) {
-				len = fmt ? 2 : 1;
-				if ((ptr = ensure(buffer, len + 1)) == NULL) {
+		bool fail = false;
+		while ((child != NULL) && !fail) {
+			if (print_value(child, depth + 1, fmt, buffer) == NULL) {
+				buffer->content[buffer->position] = '\0';
+				return NULL;
+			}
+			buffer->position = update(buffer); /* TODO: get the length from print_value! */
+			if (child->next != NULL) {
+				size_t length = fmt ? 2 : 1; /* place for one space needed if fmt */
+				if(ensure(buffer, length + 1) == NULL) {
 					if (buffer->content != NULL) {
 						buffer->content[buffer->position] = '\0';
 					}
 					return NULL;
 				}
-				*ptr++ = ',';
+				buffer->content[buffer->position] = ',';
+				buffer->position++;
 				if (fmt) {
-					*ptr++ = ' ';
+					buffer->content[buffer->position] = ' ';
+					buffer->position++;
 				}
-				*ptr = '\0';
-				buffer->position += len;
+				buffer->content[buffer->position] = '\0';
 			}
 			child = child->next;
 		}
-		if ((ptr = ensure(buffer, 2)) == NULL) {
+		if (ensure(buffer, 2) == NULL) {
 			if (buffer->content != NULL) {
 				buffer->content[buffer->position] = '\0';
 			}
 			return NULL;
 		}
-		*ptr++ = ']';
-		*ptr = '\0';
-		out = (char*) (buffer->content) + i;
-	} else {
-		/* Allocate an array to hold the values for each */
-		entries = (char**)mcJSON_malloc(numentries * sizeof(char*));
-		if (entries == NULL) {
-			return NULL;
-		}
-		memset(entries, 0, numentries * sizeof(char*));
-		/* Retrieve all the results: */
-		child = item->child;
-		while (child && !fail) {
-			ret = print_value(child, depth + 1, fmt, 0);
-			entries[i++] = ret;
-			if (ret) {
-				len += strlen(ret) + 2 + (fmt ? 1 : 0);
-			} else {
-				fail = true;
-			}
-			child = child->next;
-		}
+		buffer->content[buffer->position] = ']';
+		buffer->position++;
+		buffer->content[buffer->position] = '\0';
 
-		/* If we didn't fail, try to malloc the output string */
-		if (!fail) {
-			out = (char*)mcJSON_malloc(len);
-		}
-		/* If that fails, we fail. */
-		if (out == NULL) {
+		char *out = (char*) buffer->content + start_position;
+		return out;
+	}
+
+	/* unbuffered */
+	/* Allocate an array to hold the values for each */
+	char **entries = (char**)mcJSON_malloc(numentries * sizeof(char*));
+	if (entries == NULL) {
+		return NULL;
+	}
+	memset(entries, 0, numentries * sizeof(char*)); /* initialize as NULL pointers */
+
+	/* Retrieve all the results: */
+	child = item->child;
+	size_t length = 0;
+	bool fail = false;
+	for (size_t i = 0; (i < numentries) && (child != NULL) && !fail; child = child->next, i++) {
+		entries[i] = print_value(child, depth + 1, fmt, 0);
+		if (entries[i] == NULL) {
 			fail = true;
+			break;
 		}
 
-		/* Handle failure. */
-		if (fail) {
-			for (i = 0; i < numentries; i++) {
-				if (entries[i]) {
-					mcJSON_free(entries[i]);
+		length += strlen(entries[i]) + 2 + (fmt ? 1 : 0); /* TODO: get length from print_value */
+	}
+
+	/* If we didn't fail, try to alloc the output string */
+	if (!fail) {
+		output = buffer_create_on_heap(length, length);
+	}
+	/* If that fails, we fail. */
+	if (output == NULL) {
+		fail = true;
+	}
+
+	/* Compose the output array. */
+	if (!fail) {
+		output->content[output->position] = '[';
+		output->position++;
+		output->content[output->position] = '\0';
+		for (size_t i = 0; i < numentries; i++) {
+			size_t entry_length = strlen(entries[i]);
+			if (buffer_copy_from_raw(output, output->position, (unsigned char*)entries[i], 0, entry_length) != 0) {
+				if (output->content != NULL) {
+					output->content[output->position] = '\0';
 				}
+				fail = true;
+				break;
 			}
-			mcJSON_free(entries);
-			return NULL;
-		}
-
-		/* Compose the output array. */
-		*out = '[';
-		ptr = out + 1;
-		*ptr = '\0';
-		for (i = 0; i < numentries; i++) {
-			tmplen = strlen(entries[i]);
-			memcpy(ptr, entries[i], tmplen);
-			ptr += tmplen;
+			output->position += entry_length;
 			if (i != (numentries - 1)) {
-				*ptr++ = ',';
+				output->content[output->position] = ',';
+				output->position++;
 				if (fmt) {
-					*ptr++ = ' ';
+					output->content[output->position] = ' ';
+					output->position++;
 				}
-				*ptr = '\0';
+				output->content[output->position] = '\0';
 			}
 			mcJSON_free(entries[i]);
 		}
-		mcJSON_free(entries);
-		*ptr++ = ']';
-		*ptr++ = '\0';
 	}
+
+	/* Handle failure. */
+	if (fail) {
+		for (size_t i = 0; i < numentries; i++) {
+			if (entries[i] != NULL) {
+				mcJSON_free(entries[i]);
+			}
+		}
+		mcJSON_free(entries);
+		return NULL;
+	}
+
+	mcJSON_free(entries);
+	output->content[output->position] = ']';
+	output->position++;
+	output->content[output->position] = '\0';
+
+	char *out = (char*) output->content;
+	mcJSON_free(output); /* free the buffer_t struct */
 	return out;
 }
 
