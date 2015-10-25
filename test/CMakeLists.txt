@@ -9,11 +9,14 @@ add_subdirectory(test-data)
 add_executable(test-objects test-objects common)
 target_link_libraries(test-objects mcjson)
 add_test(NAME test-objects
-    COMMAND "${CMAKE_CURRENT_BINARY_DIR}/test-objects")
+    COMMAND "${CMAKE_CURRENT_BINARY_DIR}/test-objects" "test-objects.out")
 if(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
     add_test(NAME "test-objects-valgrind"
-        COMMAND "${MEMORYCHECK_COMMAND}" ${MEMORYCHECK_COMMAND_OPTIONS} "${CMAKE_CURRENT_BINARY_DIR}/test-objects")
+        COMMAND "${MEMORYCHECK_COMMAND}" ${MEMORYCHECK_COMMAND_OPTIONS} "${CMAKE_CURRENT_BINARY_DIR}/test-objects" "test-objects.out")
 endif(NOT ("${MEMORYCHECK_COMMAND}" MATCHES "MEMORYCHECK_COMMAND-NOTFOUND"))
+execute_process(COMMAND cmake -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/test-objects.ref" "${CMAKE_CURRENT_BINARY_DIR}/test-objects.ref")
+add_test(NAME test-objects-comparison
+    COMMAND cmake -E compare_files "${CMAKE_CURRENT_BINARY_DIR}/test-objects.out" "${CMAKE_CURRENT_BINARY_DIR}/test-objects.ref")
 
 #test_utils
 add_executable(test_utils test_utils)

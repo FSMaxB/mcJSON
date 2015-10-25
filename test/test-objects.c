@@ -59,7 +59,7 @@ struct record {
 };
 
 /* Create a bunch of objects as demonstration. */
-void create_objects() {
+void create_objects(FILE *output_file) {
 	/* declare a few. */
 	mcJSON *root;
 	mcJSON *fmt;
@@ -96,6 +96,9 @@ void create_objects() {
 	out = mcJSON_Print(root);
 	mcJSON_Delete(root);
 	printf("%s\n", out);
+	if (output_file != NULL) {
+		fprintf(output_file, "%s\n", out);
+	}
 	free(out);
 
 	/* Our "days of the week" array: */
@@ -104,6 +107,9 @@ void create_objects() {
 	out = mcJSON_Print(root);
 	mcJSON_Delete(root);
 	printf("%s\n", out);
+	if (output_file != NULL) {
+		fprintf(output_file, "%s\n", out);
+	}
 	free(out);
 
 	/* Our matrix: */
@@ -117,6 +123,9 @@ void create_objects() {
 	out = mcJSON_Print(root);
 	mcJSON_Delete(root);
 	printf("%s\n",out);
+	if (output_file != NULL) {
+		fprintf(output_file, "%s\n", out);
+	}
 	free(out);
 
 
@@ -135,6 +144,9 @@ void create_objects() {
 	out = mcJSON_Print(root);
 	mcJSON_Delete(root);
 	printf("%s\n", out);
+	if (output_file != NULL) {
+		fprintf(output_file, "%s\n", out);
+	}
 	free(out);
 
 	/* Our array of "records": */
@@ -157,6 +169,9 @@ void create_objects() {
 	out = mcJSON_Print(root);
 	mcJSON_Delete(root);
 	printf("%s\n", out);
+	if (output_file != NULL) {
+		fprintf(output_file, "%s\n", out);
+	}
 	free(out);
 
 	root = mcJSON_CreateObject();
@@ -164,10 +179,28 @@ void create_objects() {
 	out=mcJSON_Print(root);
 	mcJSON_Delete(root);
 	printf("%s\n", out);
+	if (output_file != NULL) {
+		fprintf(output_file, "%s\n", out);
+	}
 	free(out);
 }
 
-int main (void) {
+int main (int argc, char **argv) {
+	if ((argc != 1) && (argc != 2)) {
+		fprintf(stderr, "ERROR: Invalid arguments!\n");
+		fprintf(stderr, "Usage: %s [output_file]\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	FILE *output_file = NULL;
+	if ((argc == 2) && (argv[1] != NULL)) {
+		output_file = fopen(argv[1], "w");
+		if (output_file == NULL) {
+			fprintf(stderr, "ERROR: Failed to open file '%s'\n", argv[1]);;
+			return EXIT_FAILURE;
+		}
+	}
+
 	/* a bunch of json: */
 	char text1[] = "{\n\"name\": \"Jack (\\\"Bee\\\") Nimble\", \n\"format\": {\"type\":       \"rect\", \n\"width\":      1920, \n\"height\":     1080, \n\"interlace\":  false,\"frame rate\": 24\n}\n}";
 	char text2[] = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
@@ -177,34 +210,34 @@ int main (void) {
 
 	/* Process each json textblock by parsing, then rebuilding: */
 	int status;
-	status = doit(text1, NULL);
+	status = doit(text1, output_file);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text1!\n");
 		return EXIT_FAILURE;
 	}
-	status = doit(text2, NULL);
+	status = doit(text2, output_file);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text2!\n");
 		return EXIT_FAILURE;
 	}
-	status = doit(text3, NULL);
+	status = doit(text3, output_file);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text3!\n");
 		return EXIT_FAILURE;
 	}
-	status = doit(text4, NULL);
+	status = doit(text4, output_file);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text4!\n");
 		return EXIT_FAILURE;
 	}
-	status = doit(text5, NULL);
+	status = doit(text5, output_file);
 	if (status == 0) {
 		fprintf(stderr, "Failed on text5!\n");
 		return EXIT_FAILURE;
 	}
 
 	/* Now some samplecode for building objects concisely: */
-	create_objects();
+	create_objects(output_file);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
