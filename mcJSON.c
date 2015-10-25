@@ -612,11 +612,11 @@ static char *print_string(mcJSON *item, buffer_t *buffer) {
 
 /* Predeclare these prototypes. */
 static const char *parse_value(mcJSON *item, const char *value);
-static char *print_value(mcJSON *item, int depth, int fmt, buffer_t *buffer);
+static char *print_value(mcJSON *item, size_t depth, int fmt, buffer_t *buffer);
 static const char *parse_array(mcJSON *item, const char *value);
-static char *print_array(mcJSON *item, int depth, int fmt, buffer_t *buffer);
+static char *print_array(mcJSON *item, size_t depth, int fmt, buffer_t *buffer);
 static const char *parse_object(mcJSON *item, const char *value);
-static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer);
+static char *print_object(mcJSON *item, size_t depth, int fmt, buffer_t *buffer);
 
 /* Utility to jump whitespace and cr/lf */
 static const char *skip(const char *in) {
@@ -712,7 +712,7 @@ static const char *parse_value(mcJSON *item, const char *value) {
 }
 
 /* Render a value to text. */
-static char *print_value(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
+static char *print_value(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) {
 	char *out = NULL;
 	if (!item) {
 		return NULL;
@@ -833,7 +833,7 @@ static const char *parse_array(mcJSON *item, const char *value) {
 }
 
 /* Render an array to text */
-static char *print_array(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
+static char *print_array(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) {
 	char **entries;
 	char *out=0;
 	char *ptr;
@@ -1039,7 +1039,7 @@ static const char *parse_object(mcJSON *item, const char *value) {
 }
 
 /* Render an object to text. */
-static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
+static char *print_object(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) {
 	char **entries = NULL;
 	char **names = NULL;
 	char *out = NULL;
@@ -1048,7 +1048,6 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 	char *str;
 	int len = 7;
 	int i = 0;
-	int j;
 	mcJSON *child = item->child;
 	int numentries = 0;
 	bool fail = false;
@@ -1076,7 +1075,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 		*ptr++ = '{';
 		if (fmt) {
 			*ptr++ = '\n';
-			for (i = 0; i < depth; i++) {
+			for (size_t i = 0; i < depth; i++) {
 				*ptr++ = '\t';
 			}
 		}
@@ -1110,7 +1109,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 					}
 					return NULL;
 				}
-				for (j = 0; j < depth; j++) {
+				for (size_t i = 0; i < depth; i++) {
 					*ptr++='\t';
 				}
 				buffer->position += depth;
@@ -1158,7 +1157,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 			return NULL;
 		}
 		if (fmt) {
-			for (i = 0; i < depth - 1; i++) {
+			for (size_t i = 0; i < depth - 1; i++) {
 				*ptr++ = '\t';
 			}
 		}
@@ -1230,7 +1229,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 		*ptr = '\0';
 		for (i = 0; i < numentries; i++) {
 			if (fmt) {
-				for (j = 0;j < depth; j++) {
+				for (size_t j = 0;j < depth; j++) {
 					*ptr++ = '\t';
 				}
 			}
@@ -1257,7 +1256,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, buffer_t *buffer) {
 		mcJSON_free(names);
 		mcJSON_free(entries);
 		if (fmt) {
-			for (i = 0; i < depth - 1; i++) {
+			for (size_t i = 0; i < depth - 1; i++) {
 				*ptr++ = '\t';
 			}
 		}
