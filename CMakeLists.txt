@@ -12,14 +12,19 @@ target_link_libraries(mcjson m)
 add_library(mcjson-utils mcJSON_Utils)
 target_link_libraries(mcjson-utils mcjson)
 
-#more secure linker and compiler flags
-if(APPLE)
-    set(SECURITY_C_FLAGS "-O1 -Wformat -Wformat-security -fPIE")
-    #TODO: Find secure Linker flags that work on Mac OS X
-else(APPLE)
-    set(SECURITY_C_FLAGS "-fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -O1 -Wformat -Wformat-security -fPIE")
-    set(SECURITY_LINK_FLAGS "-z relro -z now -pie -z noexecstack -z noexecheap")
-endif(APPLE)
+#check if running debug build
+if ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
+    set(SECURITY_C_FLAGS "-Og")
+else ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
+    #more secure linker and compiler flags
+    if(APPLE)
+        set(SECURITY_C_FLAGS "-O1 -Wformat -Wformat-security -fPIE")
+        #TODO: Find secure Linker flags that work on Mac OS X
+    else(APPLE)
+        set(SECURITY_C_FLAGS "-fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -O1 -Wformat -Wformat-security -fPIE")
+        set(SECURITY_LINK_FLAGS "-z relro -z now -pie -z noexecstack -z noexecheap")
+    endif(APPLE)
+endif ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wall -Wextra -Werror ${SECURITY_C_FLAGS}")
 set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} ${SECURITY_LINK_FLAGS}")
