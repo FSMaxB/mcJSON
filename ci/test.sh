@@ -2,7 +2,7 @@
 [ ! -e build ] && mkdir build
 RETURN_VALUE=0
 cd build
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Debug
 make clean
 make
 if [ ! $? -eq 0 ]; then
