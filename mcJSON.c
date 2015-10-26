@@ -585,7 +585,7 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 static const char *parse_array(mcJSON *item, const char *value);
 static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 static const char *parse_object(mcJSON *item, const char *value);
-static char *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
+static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 
 /* Utility to jump whitespace and cr/lf */
 static const char *skip(const char *in) {
@@ -743,7 +743,11 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 				out = (char*)output->content + start_position;
 				break;
 			case mcJSON_Object:
-				out = print_object(item, depth, format, buffer);
+				output = print_object(item, depth, format, buffer);
+				if (output == NULL) {
+					return NULL;
+				}
+				out = (char*)output->content + start_position;
 				break;
 		}
 		buffer->content_length = buffer->position + 1;
@@ -783,7 +787,12 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 				free(output); /* free buffer_t */
 				break;
 			case mcJSON_Object:
-				out = print_object(item, depth, format, NULL);
+				output = print_object(item, depth, format, NULL);
+				if (output == NULL) {
+					return NULL;
+				}
+				out = (char*)output->content + start_position;
+				free(output); /* free buffer_t */
 				break;
 		}
 	}
@@ -1088,12 +1097,10 @@ static const char *parse_object(mcJSON *item, const char *value) {
 }
 
 /* Render an object to text. */
-static char *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer) {
+static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer) {
 	if (item == NULL) {
 		return NULL;
 	}
-
-	size_t start_position = 0;
 
 	buffer_t *output = NULL;
 	mcJSON *child = item->child;
@@ -1108,7 +1115,6 @@ static char *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buf
 		/* '{' + '}' + '\0' + format: '\n' + depth */
 		size_t length = format ? depth + 4 : 3;
 		if (buffer != NULL) {
-			start_position = buffer->position;
 			if (ensure(buffer, length) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
@@ -1142,17 +1148,12 @@ static char *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buf
 
 		output->content_length = output->position + 1;
 
-		char *out = (char*) output->content + start_position;
-		if (buffer == NULL) { /* unbuffered */
-			mcJSON_free(output); /* free buffer_t struct */
-		}
-		return out;
+		return output;
 	}
 
 	/* buffered */
 	if (buffer != NULL) {
 		/* allocate memory */
-		start_position = buffer->position;
 		if (ensure(buffer, format ? 3 : 2) == NULL) {
 			if (buffer->content != NULL) {
 				buffer->content[buffer->position] = '\0';
@@ -1247,8 +1248,7 @@ static char *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buf
 
 		buffer->content_length = buffer->position + 1;
 
-		char *out = (char*) (buffer->content) + start_position;
-		return out;
+		return buffer;
 	}
 
 	/* unbuffered */
@@ -1390,9 +1390,7 @@ static char *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buf
 
 	output->content_length = output->position + 1;
 
-	char *out = (char*) output->content;
-	mcJSON_free(output); /* free buffer_t struct */
-	return out;
+	return output;
 }
 
 /* Get Array size/item / object item. */
