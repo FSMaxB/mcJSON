@@ -167,13 +167,11 @@ static char* ensure(buffer_t *buffer, size_t needed) {
 }
 
 /* Render the number nicely from the given item into a string. */
-static char *print_number(mcJSON *item, buffer_t *buffer) {
-	size_t start_position = 0;
+static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 	buffer_t *output = NULL;
 	double d = item->valuedouble;
 	if (d == 0) { /* zero */
 		if (buffer != NULL) {
-			start_position = buffer->position;
 			if(ensure(buffer, 2) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
@@ -201,7 +199,6 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 		/* number is an integer */
 		static const size_t INT_STRING_SIZE = 21; /* 2^64+1 can be represented in 21 chars. */
 		if (buffer != NULL) {
-			start_position = buffer->position;
 			if (ensure(buffer, INT_STRING_SIZE) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
@@ -220,7 +217,6 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 	} else {
 		static const size_t DOUBLE_STRING_SIZE = 64; /* This is a nice tradeoff. */
 		if (buffer != NULL) {
-			start_position = buffer->position;
 			if (ensure(buffer, DOUBLE_STRING_SIZE) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
@@ -256,11 +252,7 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 	}
 
 	output->content_length = output->position + 1;
-	char *out = (char*)output->content + start_position;
-	if (buffer == NULL) {
-		mcJSON_free(output); //free buffer_t struct
-	}
-	return out;
+	return output;
 }
 
 //TODO does this work with both big and little endian?
@@ -713,11 +705,14 @@ static const char *parse_value(mcJSON *item, const char *value) {
 
 /* Render a value to text. */
 static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buffer) {
+	size_t start_position = 0;
+	buffer_t *output = NULL;
 	char *out = NULL;
 	if (item == NULL) {
 		return NULL;
 	}
 	if (buffer != NULL) { /* buffered printing */
+		start_position = buffer->position;
 		switch ((item->type) & 255) {
 			case mcJSON_NULL:
 				if ((out = ensure(buffer, 5)) == NULL) {
@@ -750,7 +745,11 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 				buffer->position += 4;
 				break;
 			case mcJSON_Number:
-				out = print_number(item, buffer);
+				output = print_number(item, buffer);
+				if (output == NULL) {
+					return NULL;
+				}
+				out = (char*)output->content + start_position;
 				break;
 			case mcJSON_String:
 				out = print_string(item, buffer);
@@ -775,7 +774,12 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 				out = mcJSON_strdup("true");
 				break;
 			case mcJSON_Number:
-				out = print_number(item, NULL);
+				output = print_number(item, NULL);
+				if (output == NULL) {
+					return NULL;
+				}
+				out = (char*)output->content + start_position;
+				free(output); /* free buffer_t */
 				break;
 			case mcJSON_String:
 				out = print_string(item, NULL);
