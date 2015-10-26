@@ -93,8 +93,8 @@ extern mcJSON *mcJSON_Parse(const char *value);
 extern char *mcJSON_Print(mcJSON *item);
 /* Render a mcJSON entity to text for transfer/storage without any formatting. Free the char* when finished. */
 extern char *mcJSON_PrintUnformatted(mcJSON *item);
-/* Render a mcJSON entity to text using a buffered strategy. prebuffer is a guess at the final size. guessing well reduces reallocation. fmt=0 gives unformatted, =1 gives formatted */
-extern char *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, int fmt);
+/* Render a mcJSON entity to text using a buffered strategy. prebuffer is a guess at the final size. guessing well reduces reallocation. format = false gives unformatted, = true gives formatted */
+extern char *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool format);
 /* Delete a mcJSON entity and all subentities. */
 extern void mcJSON_Delete(mcJSON *c);
 
