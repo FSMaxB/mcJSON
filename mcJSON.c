@@ -1100,6 +1100,10 @@ static const char *parse_object(mcJSON *item, const char *value) {
 
 /* Render an object to text. */
 static char *print_object(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) {
+	if (item == NULL) {
+		return NULL;
+	}
+
 	size_t start_position = 0;
 
 	buffer_t *output = NULL;
