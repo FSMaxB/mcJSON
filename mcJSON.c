@@ -77,15 +77,18 @@ static int mcJSON_strcasecmp(const char *s1,const char *s2) {
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
 static void (*mcJSON_free)(void *ptr) = free;
 
-static char* mcJSON_strdup(const char* str) {
-	size_t len;
-	char* copy;
-
-	len = strlen(str) + 1;
-	if ((copy = (char*)mcJSON_malloc(len)) == NULL) {
+static buffer_t* mcJSON_strdup(const char* string) {
+	if (string == NULL) {
 		return NULL;
 	}
-	memcpy(copy, str, len);
+	size_t length = strlen(string) + 1;
+
+	buffer_t *copy = buffer_create_on_heap(length, 0);
+	if (buffer_copy_from_raw(copy, 0, (unsigned char*)string, 0, length) != 0) {
+		buffer_destroy_from_heap(copy);
+		return NULL;
+	}
+
 	return copy;
 }
 
@@ -754,13 +757,28 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 	} else { /* non buffered printing */
 		switch ((item->type) & 255) {
 			case mcJSON_NULL:
-				out = mcJSON_strdup("null");
+				output = mcJSON_strdup("null");
+				if (output == NULL) {
+					return NULL;
+				}
+				out = (char*)output->content + start_position;
+				mcJSON_free(output); /* free buffer_t */
 				break;
 			case mcJSON_False:
-				out = mcJSON_strdup("false");
+				output = mcJSON_strdup("false");
+				if (output == NULL) {
+					return NULL;
+				}
+				out = (char*)output->content + start_position;
+				mcJSON_free(output); /* free buffer_t */
 				break;
 			case mcJSON_True:
-				out = mcJSON_strdup("true");
+				output = mcJSON_strdup("true");
+				if (output == NULL) {
+					return NULL;
+				}
+				out = (char*)output->content + start_position;
+				mcJSON_free(output); /* free buffer_t */
 				break;
 			case mcJSON_Number:
 				output = print_number(item, NULL);
