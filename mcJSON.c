@@ -178,10 +178,12 @@ static int update(buffer_t *buffer) {
 
 /* Render the number nicely from the given item into a string. */
 static char *print_number(mcJSON *item, buffer_t *buffer) {
+	size_t start_position = 0;
 	buffer_t *output = NULL;
 	double d = item->valuedouble;
 	if (d == 0) { /* zero */
 		if (buffer != NULL) {
+			start_position = buffer->position;
 			if(ensure(buffer, 2) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
@@ -204,10 +206,12 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 			}
 			return NULL;
 		}
+		output->position++;
 	} else if ((fabs(((double)item->valueint) - d) <= DBL_EPSILON) && (d <= INT_MAX) && (d >= INT_MIN)) {
 		/* number is an integer */
 		static const size_t INT_STRING_SIZE = 21; /* 2^64+1 can be represented in 21 chars. */
 		if (buffer != NULL) {
+			start_position = buffer->position;
 			if (ensure(buffer, INT_STRING_SIZE) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
@@ -222,10 +226,11 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 			return NULL;
 		}
 
-		snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%d", item->valueint);
+		output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%d", item->valueint);
 	} else {
 		static const size_t DOUBLE_STRING_SIZE = 64; /* This is a nice tradeoff. */
 		if (buffer != NULL) {
+			start_position = buffer->position;
 			if (ensure(buffer, DOUBLE_STRING_SIZE) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
@@ -250,16 +255,18 @@ static char *print_number(mcJSON *item, buffer_t *buffer) {
 				}
 				return NULL;
 			}
+			output->position += 4;
 		} else if ((fabs(floor(d) - d) <= DBL_EPSILON) && (fabs(d) < 1.0e60)) {
-			snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%.0f", d);
+			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%.0f", d);
 		} else if ((fabs(d) < 1.0e-6) || (fabs(d) > 1.0e9)) {
-			snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%e", d);
+			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%e", d);
 		} else {
-			snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%f", d);
+			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%f", d);
 		}
 	}
 
-	char *out = (char*)output->content + output->position;
+	output->content_length = output->position + 1;
+	char *out = (char*)output->content + start_position;
 	if (buffer == NULL) {
 		mcJSON_free(output); //free buffer_t struct
 	}
@@ -457,6 +464,9 @@ static char *print_string_ptr(const char *str, buffer_t *buffer) {
 			}
 			return NULL;
 		}
+		output->position += 2;
+
+		output->content_length = output->position + 1;
 
 		char *out = (char*) output->content + start_position;
 		if (buffer == NULL) { /* unbuffered */
@@ -714,7 +724,7 @@ static const char *parse_value(mcJSON *item, const char *value) {
 /* Render a value to text. */
 static char *print_value(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) {
 	char *out = NULL;
-	if (!item) {
+	if (item == NULL) {
 		return NULL;
 	}
 	if (buffer != NULL) { /* buffered printing */
@@ -727,6 +737,7 @@ static char *print_value(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) 
 					return NULL;
 				}
 				strncpy(out, "null", 5);
+				buffer->position += 4;
 				break;
 			case mcJSON_False:
 				if ((out = ensure(buffer, 6)) == NULL) {
@@ -736,6 +747,7 @@ static char *print_value(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) 
 					return NULL;
 				}
 				strncpy(out, "false", 6);
+				buffer->position += 5;
 				break;
 			case mcJSON_True:
 				if ((out = ensure(buffer, 5)) == NULL) {
@@ -745,6 +757,7 @@ static char *print_value(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) 
 					return NULL;
 				}
 				strncpy(out, "true", 5);
+				buffer->position += 4;
 				break;
 			case mcJSON_Number:
 				out = print_number(item, buffer);
@@ -759,6 +772,7 @@ static char *print_value(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) 
 				out = print_object(item, depth, fmt, buffer);
 				break;
 		}
+		buffer->content_length = buffer->position + 1;
 	} else { /* non buffered printing */
 		switch ((item->type) & 255) {
 			case mcJSON_NULL:
@@ -879,6 +893,9 @@ static char *print_array(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) 
 			}
 			return NULL;
 		}
+		output->position += 2;
+
+		output->content_length = output->position + 2;
 
 		char *out = (char*) output->content + start_position;
 		if (buffer == NULL) { /* unbuffered */
@@ -937,6 +954,8 @@ static char *print_array(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) 
 		buffer->content[buffer->position] = ']';
 		buffer->position++;
 		buffer->content[buffer->position] = '\0';
+
+		buffer->content_length = buffer->position + 1;
 
 		char *out = (char*) buffer->content + start_position;
 		return out;
@@ -1016,6 +1035,8 @@ static char *print_array(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) 
 	output->content[output->position] = ']';
 	output->position++;
 	output->content[output->position] = '\0';
+
+	output->content_length = output->position + 1;
 
 	char *out = (char*) output->content;
 	mcJSON_free(output); /* free the buffer_t struct */
@@ -1136,6 +1157,8 @@ static char *print_object(mcJSON *item, size_t depth, int fmt, buffer_t *buffer)
 		output->position++;
 		output->content[output->position] = '\0';
 
+		output->content_length = output->position + 1;
+
 		char *out = (char*) output->content + start_position;
 		if (buffer == NULL) { /* unbuffered */
 			mcJSON_free(output); /* free buffer_t struct */
@@ -1240,6 +1263,8 @@ static char *print_object(mcJSON *item, size_t depth, int fmt, buffer_t *buffer)
 		buffer->content[buffer->position] = '}';
 		buffer->position++;
 		buffer->content[buffer->position] = '\0';
+
+		buffer->content_length = buffer->position + 1;
 
 		char *out = (char*) (buffer->content) + start_position;
 		return out;
@@ -1379,6 +1404,8 @@ static char *print_object(mcJSON *item, size_t depth, int fmt, buffer_t *buffer)
 	output->content[output->position] = '}';
 	output->position++;
 	output->content[output->position] = '\0';
+
+	output->content_length = output->position + 1;
 
 	char *out = (char*) output->content;
 	mcJSON_free(output); /* free buffer_t struct */
