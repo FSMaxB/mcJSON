@@ -166,16 +166,6 @@ static char* ensure(buffer_t *buffer, size_t needed) {
 	return (char*)buffer->content + buffer->position;
 }
 
-/* update the position in the buffer (by searching the terminating null character) */
-static int update(buffer_t *buffer) {
-	unsigned char *str;
-	if ((buffer == NULL) || (buffer->content == NULL)) {
-		return 0;
-	}
-	str = buffer->content + buffer->position;
-	return buffer->position + strlen((char*)str);
-}
-
 /* Render the number nicely from the given item into a string. */
 static char *print_number(mcJSON *item, buffer_t *buffer) {
 	size_t start_position = 0;
@@ -926,7 +916,7 @@ static char *print_array(mcJSON *item, size_t depth, int fmt, buffer_t *buffer) 
 				buffer->content[buffer->position] = '\0';
 				return NULL;
 			}
-			buffer->position = update(buffer); /* TODO: get the length from print_value! */
+
 			if (child->next != NULL) {
 				size_t length = fmt ? 2 : 1; /* place for one space needed if fmt */
 				if(ensure(buffer, length + 1) == NULL) {
@@ -1207,7 +1197,6 @@ static char *print_object(mcJSON *item, size_t depth, int fmt, buffer_t *buffer)
 				}
 				return NULL;
 			}
-			//buffer->position = update(buffer); //TODO: Does it work like that?
 
 			if (ensure(buffer, fmt ? 2 : 1) == NULL) {
 				if (buffer->content != NULL) {
@@ -1228,7 +1217,6 @@ static char *print_object(mcJSON *item, size_t depth, int fmt, buffer_t *buffer)
 				}
 				return NULL;
 			}
-			buffer->position= update(buffer); /* TODO get length from print_value */
 
 			size_t length = (fmt ? 1 : 0) + ((child->next != NULL) ? 1 : 0); /* '\t'? ','? */
 			if (ensure(buffer, length + 1) == NULL) {
