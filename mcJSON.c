@@ -922,7 +922,7 @@ static char *print_object(mcJSON *item, int depth, int fmt, printbuffer *p) {
 		*ptr++ = '{';
 		if (fmt) {
 			*ptr++ = '\n';
-			for (i = 0; i < depth - 1; i++) {
+			for (i = 0; i < depth; i++) {
 				*ptr++ = '\t';
 			}
 		}

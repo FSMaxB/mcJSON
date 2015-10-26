@@ -106,7 +106,7 @@ Test 10 (err 0):
 	"foo":	"bar",
 	"child":	{
 		"grandchild":	{
-	}
+		}
 	}
 }
 
@@ -211,7 +211,7 @@ Test 10: (patch: [{ "op": "add", "path": "/child", "value": { "grandchild": { } 
 		"path":	"/child",
 		"value":	{
 			"grandchild":	{
-		}
+			}
 		}
 	}]
 
