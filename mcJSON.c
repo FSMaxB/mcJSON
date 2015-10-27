@@ -818,14 +818,8 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 
 	buffer_t *output = NULL;
 
-	mcJSON *child = item->child;
-
 	/* How many entries in the array? */
-	size_t numentries = 0;
-	while (child != NULL) {
-		numentries++;
-		child = child->next;
-	}
+	size_t numentries = mcJSON_GetArraySize(item);
 
 	/* Explicitly handle numentries == 0 */
 	if (numentries == 0) { /* empty array */
@@ -876,7 +870,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 		buffer->content[buffer->position] = '[';
 		buffer->position++;
 
-		child = item->child;
+		mcJSON *child = item->child;
 		bool fail = false;
 		while ((child != NULL) && !fail) {
 			if (print_value(child, depth + 1, format, buffer) == NULL) {
@@ -926,7 +920,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 	memset(entries, 0, numentries * sizeof(buffer_t*)); /* initialize as NULL pointers */
 
 	/* Retrieve all the results: */
-	child = item->child;
+	mcJSON *child = item->child;
 	size_t length = 0;
 	bool fail = false;
 	for (size_t i = 0; (i < numentries) && (child != NULL) && !fail; child = child->next, i++) {
@@ -1072,12 +1066,10 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 	}
 
 	buffer_t *output = NULL;
-	mcJSON *child = item->child;
 	bool fail = false;
 
 	/* Count the number of entries. */
-	size_t numentries;
-	for (numentries = 0; child != NULL; child = child->next, numentries++) {}
+	size_t numentries = mcJSON_GetArraySize(item);
 
 	/* Explicitly handle empty object case */
 	if (numentries == 0) {
@@ -1138,7 +1130,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 		}
 		buffer->content[buffer->position] = '\0';
 
-		child = item->child;
+		mcJSON *child = item->child;
 		depth++;
 		while (child != NULL) {
 			if (format) {
@@ -1237,7 +1229,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 	memset(names, 0, sizeof(buffer_t*) * numentries);
 
 	/* Collect all the results into our arrays: */
-	child = item->child;
+	mcJSON *child = item->child;
 	depth++;
 	/* length = '{' + '}' + '\0' */
 	size_t length = 3; /* TODO: Why was this 7 */
