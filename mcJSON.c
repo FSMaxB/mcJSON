@@ -1021,6 +1021,9 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 			}
 		}
 		mcJSON_free(entries);
+		if (output != NULL) {
+			buffer_destroy_from_heap(output);
+		}
 		return NULL;
 	}
 
@@ -1376,6 +1379,9 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 		}
 		mcJSON_free(names);
 		mcJSON_free(entries);
+		if (output != NULL) {
+			buffer_destroy_from_heap(output);
+		}
 		return NULL;
 	}
 
