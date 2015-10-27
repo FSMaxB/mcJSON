@@ -786,7 +786,7 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 					return NULL;
 				}
 				out = (char*)output->content + start_position;
-				free(output); /* free buffer_t */
+				mcJSON_free(output); /* free buffer_t */
 				break;
 			case mcJSON_String:
 				output = print_string(item, NULL);
@@ -1146,7 +1146,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 			return NULL;
 		}
 		if (output->content == NULL) {
-			free(output);
+			mcJSON_free(output);
 			return NULL;
 		}
 
@@ -1297,7 +1297,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 	for (size_t i = 0; (i < numentries) && (child != NULL) && !fail; child = child->next, i++) {
 		buffer_t *name = print_string_ptr(child->string, NULL);
 		names[i] = (char*)name->content;
-		free(name);
+		mcJSON_free(name);
 		if (names[i] == NULL) {
 			fail = true;
 			break;
