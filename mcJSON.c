@@ -53,10 +53,10 @@
 
 /* error pointer, points to the position
    in the input where the error happened */
-static const char *ep;
+static const char *error_pointer;
 
 const char *mcJSON_GetErrorPtr(void) {
-	return ep;
+	return error_pointer;
 }
 
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
@@ -265,7 +265,7 @@ static const char *parse_string(mcJSON *item, const char *str) {
 	unsigned uc;
 	unsigned uc2;
 	if (*str != '\"') { /* not a string! */
-		ep = str;
+		error_pointer = str;
 		return NULL;
 	}
 
@@ -580,13 +580,13 @@ static const char *skip(const char *in) {
 mcJSON *mcJSON_ParseWithOpts(const char *value, const char **return_parse_end, int require_null_terminated) {
 	const char *end = NULL;
 	mcJSON *c = mcJSON_New_Item();
-	ep = NULL;
+	error_pointer = NULL;
 	if (c == NULL) { /* memory fail */
 		return NULL;
 	}
 
 	end = parse_value(c, skip(value));
-	if (end == NULL) { /* parse failure. ep is set. */
+	if (end == NULL) { /* parse failure. error_pointer is set. */
 		mcJSON_Delete(c);
 		return NULL;
 	}
@@ -596,7 +596,7 @@ mcJSON *mcJSON_ParseWithOpts(const char *value, const char **return_parse_end, i
 		end = skip(end);
 		if (*end) {
 			mcJSON_Delete(c);
-			ep = end;
+			error_pointer = end;
 			return NULL;
 		}
 	}
@@ -662,7 +662,7 @@ static const char *parse_value(mcJSON *item, const char *value) {
 		return parse_object(item, value);
 	}
 
-	ep = value;
+	error_pointer = value;
 	return NULL; /* failure. */
 }
 
@@ -769,7 +769,7 @@ static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *
 static const char *parse_array(mcJSON *item, const char *value) {
 	mcJSON *child;
 	if (*value != '[') { /* not an array! */
-		ep = value;
+		error_pointer = value;
 		return NULL;
 	}
 
@@ -806,7 +806,7 @@ static const char *parse_array(mcJSON *item, const char *value) {
 	if (*value == ']') { /* end of array */
 		return value + 1;
 	}
-	ep = value;
+	error_pointer = value;
 	return NULL; /* malformed. */
 }
 
@@ -998,7 +998,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 static const char *parse_object(mcJSON *item, const char *value) {
 	mcJSON *child;
 	if (*value != '{') { /* not an object! */
-		ep = value;
+		error_pointer = value;
 		return NULL;
 	}
 
@@ -1020,7 +1020,7 @@ static const char *parse_object(mcJSON *item, const char *value) {
 	child->name = child->valuestring;
 	child->valuestring = NULL;
 	if (*value != ':') { /* fail! */
-		ep = value;
+		error_pointer = value;
 		return NULL;
 	}
 	value = skip(parse_value(child, skip(value + 1))); /* skip any spacing, get the value. */
@@ -1043,7 +1043,7 @@ static const char *parse_object(mcJSON *item, const char *value) {
 		child->name = child->valuestring;
 		child->valuestring = NULL;
 		if (*value != ':') { /* fail! */
-			ep = value;
+			error_pointer = value;
 			return NULL;
 		}
 		value = skip(parse_value(child, skip(value + 1))); /* skip any spacing, get the value. */
@@ -1055,7 +1055,7 @@ static const char *parse_object(mcJSON *item, const char *value) {
 	if (*value == '}') { /* end of object */
 		return value + 1;
 	}
-	ep = value;
+	error_pointer = value;
 	return NULL; /* malformed. */
 }
 
