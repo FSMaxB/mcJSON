@@ -59,7 +59,7 @@ struct record {
 };
 
 /* Create a bunch of objects as demonstration. */
-void create_objects(FILE *output_file) {
+int create_objects(FILE *output_file) {
 	/* declare a few. */
 	mcJSON *root;
 	mcJSON *fmt;
@@ -183,6 +183,27 @@ void create_objects(FILE *output_file) {
 		fprintf(output_file, "%s\n", out);
 	}
 	free(out);
+
+	/* Check mcJSON_GetObjectItem and make sure it's case sensitive */
+	root = mcJSON_CreateObject();
+	mcJSON_AddNumberToObject(root, "a", 1);
+	mcJSON_AddNumberToObject(root, "A", 2);
+	out = mcJSON_Print(root);
+	printf("%s\n", out);
+	if (output_file != NULL) {
+		fprintf(output_file, "%s\n", out);
+	}
+	free(out);
+	mcJSON *one = mcJSON_GetObjectItem(root, "a");
+	mcJSON *two = mcJSON_GetObjectItem(root, "A");
+	if ((one == NULL) || (one->valueint != 1)
+			|| (two == NULL) || (two->valueint != 2)) {
+		fprintf(stderr, "ERROR: Failed to get item from object.\n");
+		return EXIT_FAILURE;
+	}
+	mcJSON_Delete(root);
+
+	return 0;
 }
 
 int main (int argc, char **argv) {
@@ -224,7 +245,12 @@ int main (int argc, char **argv) {
 	}
 
 	/* Now some samplecode for building objects concisely: */
-	create_objects(output_file);
+	if (create_objects(output_file) != 0) {
+		if (output_file != NULL) {
+			fclose(output_file);
+		}
+		return EXIT_FAILURE;
+	}
 
 	if (output_file != NULL) {
 		fclose(output_file);
