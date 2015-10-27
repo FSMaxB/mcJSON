@@ -102,7 +102,7 @@ extern void mcJSON_Delete(mcJSON *c);
 extern int mcJSON_GetArraySize(mcJSON *array);
 /* Retrieve item number "item" from array "array". Returns NULL if unsuccessful. */
 extern mcJSON *mcJSON_GetArrayItem(mcJSON *array,int item);
-/* Get item "string" from object. Case insensitive. */
+/* Get item "string" from object. */
 extern mcJSON *mcJSON_GetObjectItem(mcJSON *object,const char *string);
 
 /* For analysing failed parses. This returns a pointer to the parse error. You'll probably need to look a few chars back to make sense of it. Defined when mcJSON_Parse() returns 0. 0 when mcJSON_Parse() succeeds. */

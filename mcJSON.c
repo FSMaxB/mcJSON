@@ -59,21 +59,6 @@ const char *mcJSON_GetErrorPtr(void) {
 	return ep;
 }
 
-static int mcJSON_strcasecmp(const char *s1,const char *s2) {
-	if (s1 == NULL) {
-		return (s1 == s2) ? 0 : 1;
-	}
-	if (s2 == NULL) {
-		return 1;
-	}
-	for(; tolower(*s1) == tolower(*s2); ++s1, ++s2) {
-		if(*s1 == 0) {
-			return 0;
-		}
-	}
-	return tolower(*(const unsigned char *)s1) - tolower(*(const unsigned char *)s2);
-}
-
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
 static void (*mcJSON_free)(void *ptr) = free;
 
@@ -1431,7 +1416,8 @@ mcJSON *mcJSON_GetArrayItem(mcJSON *array, int item) {
 }
 mcJSON *mcJSON_GetObjectItem(mcJSON *object, const char *string) {
 	mcJSON *c = object->child;
-	while (c && mcJSON_strcasecmp((char*)c->string->content, string)) {
+	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
+	while (c && (buffer_compare(c->string, string_buffer) != 0)) {
 		c = c->next;
 	}
 	return c;
@@ -1539,7 +1525,8 @@ void mcJSON_DeleteItemFromArray(mcJSON *array, int which) {
 mcJSON *mcJSON_DetachItemFromObject(mcJSON *object, const char *string) {
 	int i = 0;
 	mcJSON *c = object->child;
-	while (c && mcJSON_strcasecmp((char*)c->string->content, string)) {
+	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
+	while (c && (buffer_compare(c->string, string_buffer) != 0)) {
 		i++;
 		c = c->next;
 	}
@@ -1598,7 +1585,8 @@ void   mcJSON_ReplaceItemInArray(mcJSON *array, int which, mcJSON *newitem) {
 void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *newitem) {
 	int i = 0;
 	mcJSON *c = object->child;
-	while (c && mcJSON_strcasecmp((char*)c->string->content, string)) {
+	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
+	while (c && (buffer_compare(c->string, string_buffer) != 0)) {
 		i++;
 		c = c->next;
 	}
