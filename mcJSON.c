@@ -106,8 +106,8 @@ void mcJSON_Delete(mcJSON *c) {
 		if (!(c->type & mcJSON_IsReference) && (c->valuestring != NULL) && (c->valuestring->content != NULL)) {
 			buffer_destroy_from_heap(c->valuestring);
 		}
-		if (!(c->type & mcJSON_StringIsConst) && (c->string != NULL) && (c->string->content != NULL)) {
-			buffer_destroy_from_heap(c->string);
+		if (!(c->type & mcJSON_StringIsConst) && (c->name != NULL) && (c->name->content != NULL)) {
+			buffer_destroy_from_heap(c->name);
 		}
 		mcJSON_free(c);
 		c = next;
@@ -1057,7 +1057,7 @@ static const char *parse_object(mcJSON *item, const char *value) {
 	if (value == NULL) {
 		return NULL;
 	}
-	child->string = child->valuestring;
+	child->name = child->valuestring;
 	child->valuestring = NULL;
 	if (*value != ':') { /* fail! */
 		ep = value;
@@ -1080,7 +1080,7 @@ static const char *parse_object(mcJSON *item, const char *value) {
 		if (value == NULL) {
 			return NULL;
 		}
-		child->string = child->valuestring;
+		child->name = child->valuestring;
 		child->valuestring = NULL;
 		if (*value != ':') { /* fail! */
 			ep = value;
@@ -1188,7 +1188,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 				buffer->position += depth;
 			}
 
-			if(print_string_ptr(child->string, buffer) == NULL) {
+			if(print_string_ptr(child->name, buffer) == NULL) {
 				if (buffer->content != NULL) {
 					buffer->content[buffer->position] = '\0';
 				}
@@ -1280,7 +1280,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 		length += (depth - 1) + 1;
 	}
 	for (size_t i = 0; (i < numentries) && (child != NULL) && !fail; child = child->next, i++) {
-		buffer_t *name = print_string_ptr(child->string, NULL);
+		buffer_t *name = print_string_ptr(child->name, NULL);
 		names[i] = (char*)name->content;
 		mcJSON_free(name);
 		if (names[i] == NULL) {
@@ -1417,7 +1417,7 @@ mcJSON *mcJSON_GetArrayItem(mcJSON *array, int item) {
 mcJSON *mcJSON_GetObjectItem(mcJSON *object, const char *string) {
 	mcJSON *c = object->child;
 	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
-	while (c && (buffer_compare(c->string, string_buffer) != 0)) {
+	while (c && (buffer_compare(c->name, string_buffer) != 0)) {
 		c = c->next;
 	}
 	return c;
@@ -1435,7 +1435,7 @@ static mcJSON *create_reference(mcJSON *item) {
 		return NULL;
 	}
 	memcpy(ref, item, sizeof(mcJSON));
-	ref->string = NULL;
+	ref->name = NULL;
 	ref->type |= mcJSON_IsReference;
 	ref->next = ref->prev = NULL;
 	return ref;
@@ -1460,12 +1460,12 @@ void mcJSON_AddItemToObject(mcJSON *object, const char *string, mcJSON *item) {
 	if (item == NULL) {
 		return;
 	}
-	if ((item->string != NULL) && (item->string->content != NULL)) {
-		buffer_destroy_from_heap(item->string);
+	if ((item->name != NULL) && (item->name->content != NULL)) {
+		buffer_destroy_from_heap(item->name);
 	}
 	size_t length = strlen(string) + 1;
-	item->string = buffer_create_on_heap(length, length);
-	int status = buffer_clone_from_raw(item->string, (unsigned char*)string, length);
+	item->name = buffer_create_on_heap(length, length);
+	int status = buffer_clone_from_raw(item->name, (unsigned char*)string, length);
 	if (status != 0) {
 		//TODO proper error handling
 		return;
@@ -1476,13 +1476,13 @@ void mcJSON_AddItemToObjectCS(mcJSON *object, const char *string, mcJSON *item) 
 	if (item == NULL) {
 		return;
 	}
-	if (!(item->type & mcJSON_StringIsConst) && (item->string != NULL) && (item->string->content != NULL)) {
-		buffer_destroy_from_heap(item->string);
+	if (!(item->type & mcJSON_StringIsConst) && (item->name != NULL) && (item->name->content != NULL)) {
+		buffer_destroy_from_heap(item->name);
 	}
 
 	size_t length = strlen(string) + 1;
-	item->string = buffer_create_on_heap(length, length);
-	int status = buffer_clone_from_raw(item->string, (unsigned char*)string, length);
+	item->name = buffer_create_on_heap(length, length);
+	int status = buffer_clone_from_raw(item->name, (unsigned char*)string, length);
 	if (status != 0) {
 		//TODO proper error handling
 		return;
@@ -1526,7 +1526,7 @@ mcJSON *mcJSON_DetachItemFromObject(mcJSON *object, const char *string) {
 	int i = 0;
 	mcJSON *c = object->child;
 	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
-	while (c && (buffer_compare(c->string, string_buffer) != 0)) {
+	while (c && (buffer_compare(c->name, string_buffer) != 0)) {
 		i++;
 		c = c->next;
 	}
@@ -1586,14 +1586,14 @@ void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *newi
 	int i = 0;
 	mcJSON *c = object->child;
 	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
-	while (c && (buffer_compare(c->string, string_buffer) != 0)) {
+	while (c && (buffer_compare(c->name, string_buffer) != 0)) {
 		i++;
 		c = c->next;
 	}
 	if (c) {
 		size_t length = strlen(string) + 1;
-		newitem->string = buffer_create_on_heap(length, length);
-		int status = buffer_clone_from_raw(newitem->string, (unsigned char*)string, length);
+		newitem->name = buffer_create_on_heap(length, length);
+		int status = buffer_clone_from_raw(newitem->name, (unsigned char*)string, length);
 		if (status != 0) {
 			//TODO proper error handling
 			return;
@@ -1762,9 +1762,9 @@ mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse) {
 			return NULL;
 		}
 	}
-	if ((item->string != NULL) && (item->string->content != NULL)) {
-		newitem->string = buffer_create_on_heap(item->string->buffer_length, item->string->buffer_length);
-		int status = buffer_clone(newitem->string, item->string);
+	if ((item->name != NULL) && (item->name->content != NULL)) {
+		newitem->name = buffer_create_on_heap(item->name->buffer_length, item->name->buffer_length);
+		int status = buffer_clone(newitem->name, item->name);
 		if (status != 0) {
 			mcJSON_Delete(newitem);
 			return NULL;

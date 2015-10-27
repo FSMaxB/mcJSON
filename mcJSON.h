@@ -66,7 +66,7 @@ typedef enum mcJSON_Type {
 
 /* The mcJSON structure: */
 typedef struct mcJSON {
-	struct mcJSON *next,*prev; /* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
+	struct mcJSON *next, *prev; /* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
 	struct mcJSON *child; /* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */
 
 	mcJSON_Type type; /* The type of the item, as above. */
@@ -75,7 +75,7 @@ typedef struct mcJSON {
 	int valueint; /* The item's number, if type==mcJSON_Number */
 	double valuedouble; /* The item's number, if type==mcJSON_Number */
 
-	buffer_t * string; /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
+	buffer_t * name; /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
 } mcJSON;
 
 typedef struct mcJSON_Hooks {
