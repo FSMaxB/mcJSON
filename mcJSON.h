@@ -99,7 +99,7 @@ extern buffer_t *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool
 extern void mcJSON_Delete(mcJSON *c);
 
 /* Returns the number of items in an array (or object). */
-extern int mcJSON_GetArraySize(mcJSON *array);
+extern size_t mcJSON_GetArraySize(mcJSON *array);
 /* Retrieve item number "item" from array "array". Returns NULL if unsuccessful. */
 extern mcJSON *mcJSON_GetArrayItem(mcJSON *array,int item);
 /* Get item "string" from object. */

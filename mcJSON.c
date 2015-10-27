@@ -1364,14 +1364,11 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 }
 
 /* Get Array size/item / object item. */
-int mcJSON_GetArraySize(mcJSON *array) {
-	mcJSON *c = array->child;
-	int i = 0;
-	while (c) {
-		i++;
-		c = c->next;
-	}
-	return i;
+size_t mcJSON_GetArraySize(mcJSON *array) {
+	mcJSON *child = array->child;
+	size_t size;
+	for (size = 0; child != NULL; child = child->next, size++) {}
+	return size;
 }
 mcJSON *mcJSON_GetArrayItem(mcJSON *array, int item) {
 	mcJSON *c = array->child;
