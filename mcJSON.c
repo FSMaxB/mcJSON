@@ -62,21 +62,6 @@ const char *mcJSON_GetErrorPtr(void) {
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
 static void (*mcJSON_free)(void *ptr) = free;
 
-static buffer_t* mcJSON_strdup(const char* string) {
-	if (string == NULL) {
-		return NULL;
-	}
-	size_t length = strlen(string) + 1;
-
-	buffer_t *copy = buffer_create_on_heap(length, 0);
-	if (buffer_copy_from_raw(copy, 0, (unsigned char*)string, 0, length) != 0) {
-		buffer_destroy_from_heap(copy);
-		return NULL;
-	}
-
-	return copy;
-}
-
 void mcJSON_InitHooks(mcJSON_Hooks* hooks) {
 	if (hooks == NULL) { /* Reset hooks */
 		mcJSON_malloc = malloc;
@@ -742,7 +727,7 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 	} else { /* non buffered printing */
 		switch ((item->type) & 255) {
 			case mcJSON_NULL:
-				output = mcJSON_strdup("null");
+				output = buffer_create_from_string_on_heap("null");
 				if (output == NULL) {
 					return NULL;
 				}
@@ -750,7 +735,7 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 				mcJSON_free(output); /* free buffer_t */
 				break;
 			case mcJSON_False:
-				output = mcJSON_strdup("false");
+				output = buffer_create_from_string_on_heap("false");
 				if (output == NULL) {
 					return NULL;
 				}
@@ -758,7 +743,7 @@ static char *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buff
 				mcJSON_free(output); /* free buffer_t */
 				break;
 			case mcJSON_True:
-				output = mcJSON_strdup("true");
+				output = buffer_create_from_string_on_heap("true");
 				if (output == NULL) {
 					return NULL;
 				}
