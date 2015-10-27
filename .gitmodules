@@ -1,0 +1,3 @@
+[submodule "buffer"]
+	path = buffer
+	url = https://github.com/FSMaxB/molch-buffer
