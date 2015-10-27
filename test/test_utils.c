@@ -102,8 +102,6 @@ int main(int argc, char **argv) {
 	int numbers[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 	const char *random = "QWERTYUIOPASDFGHJKLZXCVBNM";
 	char buf[2] = {0, 0};
-	char *before;
-	char *after;
 	mcJSON *object;
 	mcJSON *nums;
 	mcJSON *num6;
@@ -115,7 +113,7 @@ int main(int argc, char **argv) {
 	}
 	root = mcJSON_Parse(json);
 	for (i = 0; i < 12; i++) {
-		char *output = mcJSON_Print(mcJSONUtils_GetPointer(root, tests[i]));
+		buffer_t *output = mcJSON_Print(mcJSONUtils_GetPointer(root, tests[i]));
 		if (output == NULL) {
 			fprintf(stderr, "ERROR: JSON Pointer Test %d failed!\n", i + 1);
 			mcJSON_Delete(root);
@@ -124,11 +122,11 @@ int main(int argc, char **argv) {
 			}
 			return EXIT_FAILURE;
 		}
-		printf("Test %d:\n%s\n\n", i + 1, output);
+		printf("Test %d:\n%.*s\n\n", i + 1, (int) output->content_length, (char*)output->content);
 		if (output_file != NULL) {
-			fprintf(output_file, "Test %d:\n%s\n\n", i + 1, output);
+			fprintf(output_file, "Test %d:\n%.*s\n\n", i + 1, (int)output->content_length, (char*)output->content);
 		}
-		free(output);
+		buffer_destroy_from_heap(output);
 	}
 	mcJSON_Delete(root);
 
@@ -141,7 +139,7 @@ int main(int argc, char **argv) {
 		mcJSON *object = mcJSON_Parse(patches[i][0]);
 		mcJSON *patch = mcJSON_Parse(patches[i][1]);
 		int err = mcJSONUtils_ApplyPatches(object, patch);
-		char *output = mcJSON_Print(object);
+		buffer_t *output = mcJSON_Print(object);
 		if (output == NULL) {
 			fprintf(stderr, "ERROR: JSON Apply Patch Test %d failed!\n", i + 1);
 			mcJSON_Delete(object);
@@ -151,11 +149,11 @@ int main(int argc, char **argv) {
 			}
 			return EXIT_FAILURE;
 		}
-		printf("Test %d (err %d):\n%s\n\n", i + 1, err, output);
+		printf("Test %d (err %d):\n%.*s\n\n", i + 1, err, (int) output->content_length, (char*)output->content);
 		if (output_file != NULL) {
-			fprintf(output_file, "Test %d (err %d):\n%s\n\n", i + 1, err, output);
+			fprintf(output_file, "Test %d (err %d):\n%.*s\n\n", i + 1, err, (int)output->content_length, (char*) output->content);
 		}
-		free(output);
+		buffer_destroy_from_heap(output);
 		mcJSON_Delete(object);
 		mcJSON_Delete(patch);
 	}
@@ -169,15 +167,14 @@ int main(int argc, char **argv) {
 		mcJSON *from;
 		mcJSON *to;
 		mcJSON *patch;
-		char *out;
 		if (!strlen(patches[i][2])) {
 			continue;
 		}
 		from = mcJSON_Parse(patches[i][0]);
 		to = mcJSON_Parse(patches[i][2]);
 		patch = mcJSONUtils_GeneratePatches(from, to);
-		out = mcJSON_Print(patch);
-		if (out == NULL) {
+		buffer_t *output = mcJSON_Print(patch);
+		if (output == NULL) {
 			fprintf(stderr, "ERROR: JSON Generate Path Test %d failed!\n", i + 1);
 			mcJSON_Delete(from);
 			mcJSON_Delete(to);
@@ -187,11 +184,11 @@ int main(int argc, char **argv) {
 			}
 			return EXIT_FAILURE;
 		}
-		printf("Test %d: (patch: %s):\n%s\n\n", i + 1, patches[i][1], out);
+		printf("Test %d: (patch: %s):\n%.*s\n\n", i + 1, patches[i][1], (int)output->content_length, (char*)output->content);
 		if (output_file != NULL) {
-			fprintf(output_file, "Test %d: (patch: %s):\n%s\n\n", i + 1, patches[i][1], out);
+			fprintf(output_file, "Test %d: (patch: %s):\n%.*s\n\n", i + 1, patches[i][1], (int)output->content_length, (char*)output->content);
 		}
-		free(out);
+		buffer_destroy_from_heap(output);
 		mcJSON_Delete(from);
 		mcJSON_Delete(to);
 		mcJSON_Delete(patch);
@@ -267,15 +264,15 @@ int main(int argc, char **argv) {
 		buf[0] = random[i];
 		mcJSON_AddItemToObject(sortme, buf, mcJSON_CreateNumber(1));
 	}
-	before = mcJSON_PrintUnformatted(sortme);
+	buffer_t *before = mcJSON_PrintUnformatted(sortme);
 	mcJSONUtils_SortObject(sortme);
-	after = mcJSON_PrintUnformatted(sortme);
-	printf("Before: [%s]\nAfter: [%s]\n\n", before, after);
+	buffer_t *after = mcJSON_PrintUnformatted(sortme);
+	printf("Before: [%.*s]\nAfter: [%.*s]\n\n", (int)before->content_length, (char*)before->content, (int)after->content_length, (char*)after->content);
 	if (output_file != NULL) {
-		fprintf(output_file, "Before: [%s]\nAfter: [%s]\n\n", before, after);
+		fprintf(output_file, "Before: [%.*s]\nAfter: [%.*s]\n\n", (int)before->content_length, (char*)before->content, (int)after->content_length, (char*)after->content);
 	}
-	free(before);
-	free(after);
+	buffer_destroy_from_heap(before);
+	buffer_destroy_from_heap(after);
 	mcJSON_Delete(sortme);
 
 	if (output_file != NULL) {

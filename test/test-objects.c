@@ -66,7 +66,6 @@ int create_objects(FILE *output_file) {
 	mcJSON *img;
 	mcJSON *thm;
 	mcJSON *fld;
-	char *out;
 	int i;
 	/* Our "days of the week" array: */
 	const char *strings[7] = {"Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"};
@@ -92,25 +91,32 @@ int create_objects(FILE *output_file) {
 	mcJSON_AddFalseToObject (fmt, "interlace");
 	mcJSON_AddNumberToObject(fmt, "frame rate", 24);
 
+	buffer_t *output = NULL;
 	/* Print to text, Delete the mcJSON, print it, release the string. */
-	out = mcJSON_Print(root);
+	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
-	printf("%s\n", out);
-	if (output_file != NULL) {
-		fprintf(output_file, "%s\n", out);
+	if (output == NULL) {
+		return EXIT_FAILURE;
 	}
-	free(out);
+	printf("%.*s\n", (int) output->content_length, (char*)output->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+	}
+	buffer_destroy_from_heap(output);
 
 	/* Our "days of the week" array: */
 	root = mcJSON_CreateStringArray(strings, 7);
 
-	out = mcJSON_Print(root);
+	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
-	printf("%s\n", out);
-	if (output_file != NULL) {
-		fprintf(output_file, "%s\n", out);
+	if (output == NULL) {
+		return EXIT_FAILURE;
 	}
-	free(out);
+	printf("%.*s\n", (int)output->content_length, (char*)output->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+	}
+	buffer_destroy_from_heap(output);
 
 	/* Our matrix: */
 	root = mcJSON_CreateArray();
@@ -120,13 +126,16 @@ int create_objects(FILE *output_file) {
 
 	/*mcJSON_ReplaceItemInArray(root,1,mcJSON_CreateString("Replacement")); */
 
-	out = mcJSON_Print(root);
+	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
-	printf("%s\n",out);
-	if (output_file != NULL) {
-		fprintf(output_file, "%s\n", out);
+	if (output == NULL) {
+		return EXIT_FAILURE;
 	}
-	free(out);
+	printf("%.*s\n", (int)output->content_length, (char*)output->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+	}
+	buffer_destroy_from_heap(output);
 
 
 	/* Our "gallery" item: */
@@ -141,13 +150,16 @@ int create_objects(FILE *output_file) {
 	mcJSON_AddStringToObject(thm, "Width", "100");
 	mcJSON_AddItemToObject(img, "IDs", mcJSON_CreateIntArray(ids, 4));
 
-	out = mcJSON_Print(root);
+	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
-	printf("%s\n", out);
-	if (output_file != NULL) {
-		fprintf(output_file, "%s\n", out);
+	if (output == NULL) {
+		return EXIT_FAILURE;
 	}
-	free(out);
+	printf("%.*s\n", (int)output->content_length, (char*)output->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+	}
+	buffer_destroy_from_heap(output);
 
 	/* Our array of "records": */
 
@@ -166,34 +178,46 @@ int create_objects(FILE *output_file) {
 
 	/*	mcJSON_ReplaceItemInObject(mcJSON_GetArrayItem(root,1),"City",mcJSON_CreateIntArray(ids,4)); */
 
-	out = mcJSON_Print(root);
+	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
-	printf("%s\n", out);
-	if (output_file != NULL) {
-		fprintf(output_file, "%s\n", out);
+	if (output == NULL) {
+		return EXIT_FAILURE;
 	}
-	free(out);
+	printf("%.*s\n", (int)output->content_length, (char*)output->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+	}
+	buffer_destroy_from_heap(output);
 
 	root = mcJSON_CreateObject();
 	mcJSON_AddNumberToObject(root, "number", 1.0/0.0);
-	out=mcJSON_Print(root);
+
+	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
-	printf("%s\n", out);
-	if (output_file != NULL) {
-		fprintf(output_file, "%s\n", out);
+	if (output == NULL) {
+		return EXIT_FAILURE;
 	}
-	free(out);
+	printf("%.*s\n", (int)output->content_length, (char*)output->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+	}
+	buffer_destroy_from_heap(output);
 
 	/* Check mcJSON_GetObjectItem and make sure it's case sensitive */
 	root = mcJSON_CreateObject();
 	mcJSON_AddNumberToObject(root, "a", 1);
 	mcJSON_AddNumberToObject(root, "A", 2);
-	out = mcJSON_Print(root);
-	printf("%s\n", out);
-	if (output_file != NULL) {
-		fprintf(output_file, "%s\n", out);
+
+	output = mcJSON_Print(root);
+	if (output == NULL) {
+		return EXIT_FAILURE;
 	}
-	free(out);
+	printf("%.*s\n", (int)output->content_length, (char*)output->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+	}
+	buffer_destroy_from_heap(output);
+
 	mcJSON *one = mcJSON_GetObjectItem(root, "a");
 	mcJSON *two = mcJSON_GetObjectItem(root, "A");
 	if ((one == NULL) || (one->valueint != 1)

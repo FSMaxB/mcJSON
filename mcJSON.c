@@ -603,35 +603,23 @@ mcJSON *mcJSON_Parse(const char *value) {
 }
 
 /* Render a mcJSON item/entity/structure to text. */
-char *mcJSON_Print(mcJSON *item) {
-	buffer_t *output = print_value(item, 0, true, NULL);
-	if (output == NULL) {
-		return NULL;
-	}
-	char *out = (char*)output->content;
-	mcJSON_free(output);
-	return out;
+buffer_t *mcJSON_Print(mcJSON *item) {
+	return print_value(item, 0, true, NULL);
 }
-char *mcJSON_PrintUnformatted(mcJSON *item) {
-	buffer_t *output = print_value(item, 0, false, NULL);
-	if (output == NULL) {
-		return NULL;
-	}
-	char *out = (char*)output->content;
-	mcJSON_free(output);
-	return out;
+buffer_t *mcJSON_PrintUnformatted(mcJSON *item) {
+	return print_value(item, 0, false, NULL);
 }
 
-char *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool format) {
+buffer_t *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool format) {
 	buffer_t *buffer = buffer_create_on_heap(prebuffer, prebuffer);
-	buffer_t *output = print_value(item, 0, format, buffer);
-	assert(output == buffer);
-	if (output == NULL) {
+	if (buffer == NULL) {
 		return NULL;
 	}
-	char *out = (char*)output->content;
-	mcJSON_free(buffer); //free the buffer_t struct
-	return out;
+	if (print_value(item, 0, format, buffer) == NULL) {
+		buffer_destroy_from_heap(buffer);
+		return NULL;
+	}
+	return buffer;
 }
 
 

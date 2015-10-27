@@ -90,11 +90,11 @@ extern void mcJSON_InitHooks(mcJSON_Hooks* hooks);
 /* Supply a block of JSON, and this returns a mcJSON object you can interrogate. Call mcJSON_Delete when finished. */
 extern mcJSON *mcJSON_Parse(const char *value);
 /* Render a mcJSON entity to text for transfer/storage. Free the char* when finished. */
-extern char *mcJSON_Print(mcJSON *item);
+extern buffer_t *mcJSON_Print(mcJSON *item);
 /* Render a mcJSON entity to text for transfer/storage without any formatting. Free the char* when finished. */
-extern char *mcJSON_PrintUnformatted(mcJSON *item);
+extern buffer_t *mcJSON_PrintUnformatted(mcJSON *item);
 /* Render a mcJSON entity to text using a buffered strategy. prebuffer is a guess at the final size. guessing well reduces reallocation. format = false gives unformatted, = true gives formatted */
-extern char *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool format);
+extern buffer_t *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool format);
 /* Delete a mcJSON entity and all subentities. */
 extern void mcJSON_Delete(mcJSON *c);
 

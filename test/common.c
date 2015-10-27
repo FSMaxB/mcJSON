@@ -50,7 +50,7 @@
 
 /* Parse text to JSON, then render back to text, and print! */
 int doit(char *text, FILE *output_file) {
-	char *out;
+	buffer_t *output = NULL;
 
 	mcJSON *json;
 	json = mcJSON_Parse(text);
@@ -58,28 +58,40 @@ int doit(char *text, FILE *output_file) {
 		fprintf(stderr, "Error before: [%s]\n", mcJSON_GetErrorPtr());
 		return 0;
 	} else {
-		out = mcJSON_Print(json);
-		printf("%s\n", out);
-		if (output_file != NULL) {
-			fprintf(output_file, "%s\n", out);
+		output = mcJSON_Print(json);
+		if (output == NULL) {
+			mcJSON_Delete(json);
+			return 0;
 		}
-		free(out);
+		printf("%.*s\n", (int)output->content_length, (char*)output->content);
+		if (output_file != NULL) {
+			fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+		}
+		buffer_destroy_from_heap(output);
 
 		//Do the same thing unformatted
-		out = mcJSON_PrintUnformatted(json);
-		printf("%s\n", out);
-		if (output_file != NULL) {
-			fprintf(output_file, "%s\n", out);
+		output = mcJSON_PrintUnformatted(json);
+		if (output == NULL) {
+			mcJSON_Delete(json);
+			return 0;
 		}
-		free(out);
+		printf("%.*s\n", (int)output->content_length, (char*)output->content);
+		if (output_file != NULL) {
+			fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+		}
+		buffer_destroy_from_heap(output);
 
 		//Do the same thing buffered
-		out = mcJSON_PrintBuffered(json, 20, 1);
-		printf("%s\n", out);
-		if (output_file != NULL) {
-			fprintf(output_file, "%s\n", out);
+		output = mcJSON_PrintBuffered(json, 20, 1);
+		if (output == NULL) {
+			mcJSON_Delete(json);
+			return 0;
 		}
-		free(out);
+		printf("%.*s\n", (int)output->content_length, (char*)output->content);
+		if (output_file != NULL) {
+			fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+		}
+		buffer_destroy_from_heap(output);
 
 		mcJSON_Delete(json);
 	}
