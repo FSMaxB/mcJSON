@@ -162,7 +162,7 @@ static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 		output->content_length = output->position + 1;
 		if (buffer_copy_from_raw(output, output->position, (unsigned char*)"0", 0, 2) != 0) {
 			output->content[output->position] = '\0';
-			if (buffer != NULL) {
+			if (buffer == NULL) {
 				buffer_destroy_from_heap(output);
 			}
 			return NULL;
@@ -209,7 +209,7 @@ static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 				if (output->content != NULL) {
 					output->content[output->position] = '\0';
 				}
-				if (buffer != NULL) {
+				if (buffer == NULL) {
 					buffer_destroy_from_heap(output);
 				}
 				return NULL;
@@ -397,7 +397,11 @@ static buffer_t *print_string_ptr(buffer_t *string, buffer_t *buffer) {
 		} else {
 			output = buffer_create_on_heap(3, 3);
 		}
-		if ((output == NULL) || (output->content == NULL)) {
+		if (output == NULL) {
+			return NULL;
+		}
+		if (output->content == NULL) {
+			buffer_destroy_from_heap(output);
 			return NULL;
 		}
 
@@ -441,7 +445,11 @@ static buffer_t *print_string_ptr(buffer_t *string, buffer_t *buffer) {
 	} else { /* unbuffered */
 		output = buffer_create_on_heap(string->content_length + additional_characters + 3, string->content_length + additional_characters + 3);
 	}
-	if ((output == NULL) || (output->content == NULL)) {
+	if (output == NULL) {
+		return NULL;
+	}
+	if (output->content == NULL) {
+		buffer_destroy_from_heap(output);
 		return NULL;
 	}
 
@@ -936,7 +944,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 		output = buffer_create_on_heap(length, length);
 	}
 	/* If that fails, we fail. */
-	if (output == NULL) {
+	if ((output == NULL) || (output->content == NULL)) {
 		fail = true;
 	}
 
@@ -1089,7 +1097,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 			return NULL;
 		}
 		if (output->content == NULL) {
-			mcJSON_free(output);
+			buffer_destroy_from_heap(output);
 			return NULL;
 		}
 
@@ -1258,7 +1266,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 	if (!fail) {
 		output = buffer_create_on_heap(length, length);
 	}
-	if (output == NULL) {
+	if ((output == NULL) || (output->content == NULL)) {
 		fail = true;
 	}
 
