@@ -101,13 +101,17 @@ void mcJSON_Delete(mcJSON *c) {
 
 /* Parse the input text to generate a number, and populate the result into item. */
 static const char *parse_number(mcJSON *item, const char *num) {
-	char *endptr;
-	double number = strtod(num, &endptr);
+	buffer_t *input = buffer_create_with_existing_array((unsigned char*)num, strlen(num) + 1);
+
+	char *end_pointer;
+	double number = strtod((char*)input->content + input->position, &end_pointer);
+	input->position = ((unsigned char*)end_pointer) - input->content;
 
 	item->valuedouble = number;
 	item->valueint = (int)number;
 	item->type = mcJSON_Number;
-	return endptr;
+
+	return (char*)input->content + input->position;
 }
 
 static size_t pow2gt(size_t x) {
