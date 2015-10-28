@@ -784,46 +784,55 @@ static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *
 
 /* Build an array from input text. */
 static const char *parse_array(mcJSON *item, const char *value) {
-	mcJSON *child;
-	if (*value != '[') { /* not an array! */
-		error_pointer = value;
+	buffer_t *input = buffer_create_with_existing_array((unsigned char*)value, strlen(value) + 1);
+
+	if (input->content[input->position] != '[') { /* not an array! */
+		error_pointer = (char*)input->content + input->position;
 		return NULL;
 	}
 
 	item->type = mcJSON_Array;
-	value = skip(value + 1);
-	if (*value == ']') { /* empty array. */
-		return value + 1;
+	input->position++;
+	value = skip((char*)input->content + input->position);
+	input->position = (unsigned char*)value - input->content;
+	if (input->content[input->position] == ']') { /* empty array. */
+		input->position++;
+		return (char*)input->content + input->position;
 	}
 
-	child = mcJSON_New_Item();
+	mcJSON *child = mcJSON_New_Item();
 	item->child = child;
 	if (item->child == NULL) { /* memory fail */
 		return NULL;
 	}
-	value = skip(parse_value(child, skip(value))); /* skip any spacing, get the value. */
+	value = skip(parse_value(child, skip((char*)input->content + input->position))); /* skip any spacing, get the value. */
 	if (value == NULL) {
 		return NULL;
 	}
+	input->position = (unsigned char*)value - input->content;
 
-	while (*value == ',') {
-		mcJSON *new_item;
-		if ((new_item = mcJSON_New_Item()) == NULL) { /* memory fail */
+	while ((input->position < input->content_length) && (input->content[input->position] == ',')) {
+		mcJSON *new_item = mcJSON_New_Item();
+		if (new_item == NULL) { /* memory fail */
 			return NULL;
 		}
 		child->next = new_item;
 		new_item->prev = child;
-		child = new_item;
-		value = skip(parse_value(child, skip(value + 1)));
+		input->position++;
+		value = skip(parse_value(new_item, skip((char*)input->content + input->position)));
 		if (value == NULL) { /* memory fail */
 			return NULL;
 		}
+		input->position = (unsigned char*)value - input->content;
+		child = new_item;
 	}
 
-	if (*value == ']') { /* end of array */
-		return value + 1;
+	if (input->content[input->position] == ']') { /* end of array */
+		input->position++;
+		return (char*)input->content + input->position;
 	}
-	error_pointer = value;
+
+	error_pointer = (char*)input->content + input->position;
 	return NULL; /* malformed. */
 }
 
