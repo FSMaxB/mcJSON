@@ -577,17 +577,17 @@ static const char *skip(const char *in) {
 }
 
 /* Parse an object - create a new root, and populate. */
-mcJSON *mcJSON_ParseWithOpts(const char *value, const char **return_parse_end, int require_null_terminated) {
+mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool require_null_terminated) {
 	const char *end = NULL;
-	mcJSON *c = mcJSON_New_Item();
+	mcJSON *root = mcJSON_New_Item();
 	error_pointer = NULL;
-	if (c == NULL) { /* memory fail */
+	if (root == NULL) { /* memory fail */
 		return NULL;
 	}
 
-	end = parse_value(c, skip(value));
+	end = parse_value(root, skip((char*)json->content));
 	if (end == NULL) { /* parse failure. error_pointer is set. */
-		mcJSON_Delete(c);
+		mcJSON_Delete(root);
 		return NULL;
 	}
 
@@ -595,7 +595,7 @@ mcJSON *mcJSON_ParseWithOpts(const char *value, const char **return_parse_end, i
 	if (require_null_terminated) {
 		end = skip(end);
 		if (*end) {
-			mcJSON_Delete(c);
+			mcJSON_Delete(root);
 			error_pointer = end;
 			return NULL;
 		}
@@ -603,11 +603,11 @@ mcJSON *mcJSON_ParseWithOpts(const char *value, const char **return_parse_end, i
 	if (return_parse_end) {
 		*return_parse_end = end;
 	}
-	return c;
+	return root;
 }
 /* Default options for mcJSON_Parse */
-mcJSON *mcJSON_Parse(const char *value) {
-	return mcJSON_ParseWithOpts(value, 0, 0);
+mcJSON *mcJSON_Parse(buffer_t *json) {
+	return mcJSON_ParseWithOpts(json, NULL, false);
 }
 
 /* Render a mcJSON item/entity/structure to text. */

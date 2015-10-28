@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 	int i;
 	/* JSON Pointer tests: */
 	mcJSON *root;
-	const char *json= "{"
+	buffer_t *json = buffer_create_from_string("{"
 		"\"foo\": [\"bar\", \"baz\"],"
 		"\"\": 0,"
 		"\"a/b\": 1,"
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 		"\"k\\\"l\": 6,"
 		"\" \": 7,"
 		"\"m~n\": 8"
-	"}";
+	"}");
 
 	const char *tests[12] = {"", "/foo", "/foo/0", "/", "/a~1b", "/c%d", "/e^f", "/g|h", "/i\\j", "/k\"l", "/ ", "/m~0n"};
 
@@ -136,8 +136,10 @@ int main(int argc, char **argv) {
 		fprintf(output_file, "JSON Apply Patch Tests\n");
 	}
 	for (i = 0; i < 15; i++) {
-		mcJSON *object = mcJSON_Parse(patches[i][0]);
-		mcJSON *patch = mcJSON_Parse(patches[i][1]);
+		buffer_t *object_buffer = buffer_create_with_existing_array((unsigned char*)patches[i][0], sizeof(patches[i][0]));
+		mcJSON *object = mcJSON_Parse(object_buffer);
+		buffer_t *patch_buffer = buffer_create_with_existing_array((unsigned char*)patches[i][1], sizeof(patches[i][1]));
+		mcJSON *patch = mcJSON_Parse(patch_buffer);
 		int err = mcJSONUtils_ApplyPatches(object, patch);
 		buffer_t *output = mcJSON_Print(object);
 		if (output == NULL) {
@@ -170,8 +172,10 @@ int main(int argc, char **argv) {
 		if (!strlen(patches[i][2])) {
 			continue;
 		}
-		from = mcJSON_Parse(patches[i][0]);
-		to = mcJSON_Parse(patches[i][2]);
+		buffer_t *from_buffer = buffer_create_with_existing_array((unsigned char*)patches[i][0], sizeof(patches[i][0]));
+		from = mcJSON_Parse(from_buffer);
+		buffer_t *to_buffer = buffer_create_with_existing_array((unsigned char*)patches[i][2], sizeof(patches[i][2]));
+		to = mcJSON_Parse(to_buffer);
 		patch = mcJSONUtils_GeneratePatches(from, to);
 		buffer_t *output = mcJSON_Print(patch);
 		if (output == NULL) {

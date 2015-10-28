@@ -88,7 +88,7 @@ extern void mcJSON_InitHooks(mcJSON_Hooks* hooks);
 
 
 /* Supply a block of JSON, and this returns a mcJSON object you can interrogate. Call mcJSON_Delete when finished. */
-extern mcJSON *mcJSON_Parse(const char *value);
+extern mcJSON *mcJSON_Parse(buffer_t *json);
 /* Render a mcJSON entity to text for transfer/storage. Free the char* when finished. */
 extern buffer_t *mcJSON_Print(mcJSON *item);
 /* Render a mcJSON entity to text for transfer/storage without any formatting. Free the char* when finished. */
@@ -150,7 +150,7 @@ need to be released. With recurse!=0, it will duplicate any children connected t
 The item->next and ->prev pointers are always zero on return from Duplicate. */
 
 /* ParseWithOpts allows you to require (and check) that the JSON is null terminated, and to retrieve the pointer to the final byte parsed. */
-extern mcJSON *mcJSON_ParseWithOpts(const char *value,const char **return_parse_end,int require_null_terminated);
+extern mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool require_null_terminated);
 
 extern void mcJSON_Minify(char *json);
 

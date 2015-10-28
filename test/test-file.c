@@ -47,18 +47,18 @@
 
 
 /* Read a file, parse, render back, etc. */
-int dofile(char *input, char *output) {
+int dofile(char *input_filename, char *output_filename) {
 	//read the file
-	FILE *input_file = fopen(input, "rb");
+	FILE *input_file = fopen(input_filename, "rb");
 	if (input_file == NULL) {
-		fprintf(stderr, "ERROR: Failed to open file '%s'\n", input);
+		fprintf(stderr, "ERROR: Failed to open file '%s'\n", input_filename);
 		return 0;
 	}
 	fseek(input_file, 0, SEEK_END);
 	int status;
 	status = ftell(input_file);
 	if (status == -1) {
-		fprintf(stderr, "ERROR: Failed to get length of file '%s'\n", input);
+		fprintf(stderr, "ERROR: Failed to get length of file '%s'\n", input_filename);
 		fclose(input_file);;
 		return 0;
 	}
@@ -72,7 +72,7 @@ int dofile(char *input, char *output) {
 	}
 	size_t read_length = fread(data, 1, length, input_file);
 	if ((read_length != length) || (ferror(input_file) != 0)) {
-		fprintf(stderr, "Error occured while reading file '%s'!\n", input);
+		fprintf(stderr, "Error occured while reading file '%s'!\n", input_filename);
 		fclose(input_file);
 		free(data);
 		return 0;
@@ -80,10 +80,10 @@ int dofile(char *input, char *output) {
 
 	//create output file
 	FILE *output_file = NULL;
-	if (output != NULL) { //only if filename is given
-		output_file = fopen(output, "w");
+	if (output_filename != NULL) { //only if filename is given
+		output_file = fopen(output_filename, "w");
 		if (output_file == NULL) {
-			fprintf(stderr, "ERROR: Failed to open file '%s'!\n", output);
+			fprintf(stderr, "ERROR: Failed to open file '%s'!\n", output_filename);
 			fclose(input_file);
 			free(data);
 			return 0;
@@ -96,7 +96,8 @@ int dofile(char *input, char *output) {
 
 
 	//now do the tests
-	status = doit(data, output_file);
+	buffer_t *data_buffer = buffer_create_with_existing_array((unsigned char*)data, length);
+	status = doit(data_buffer, output_file);
 	if (output_file != NULL) {
 		fclose(output_file);
 	}
