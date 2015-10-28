@@ -262,126 +262,139 @@ static unsigned parse_hex4(const char *str) {
 }
 
 /* Parse the input text into an unescaped cstring, and populate item. */
-static const unsigned char firstByteMark[7] = {0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC};
 static const char *parse_string(mcJSON *item, const char *str) {
-	const char *ptr = str + 1;
-	int len = 0;
-	unsigned uc;
-	unsigned uc2;
-	if (*str != '\"') { /* not a string! */
-		error_pointer = str;
+	buffer_t *input = buffer_create_with_existing_array((unsigned char*)str, strlen(str) + 1);
+
+	if (input->content[0] != '\"') { /* not a string! */
+		error_pointer = (char*)input->content;
 		return NULL;
 	}
 
-	while ((*ptr != '\"') && *ptr && ++len) {
-		if (*ptr++ == '\\') { /* Skip escaped quotes. */
-			ptr++;
+	input->position++;
+
+
+	/* find the position of the closing '"' and get the length of the string */
+	size_t length = 0;
+	size_t end_position;
+	for (end_position = input->position;
+			(end_position < input->content_length)
+			&& (input->content[end_position] != '\"')
+			&& (input->content[end_position] != '\0');
+			end_position++, length++) {
+		if (input->content[end_position] == '\\') { /* Skip escaped quotes */
+			end_position++;
 		}
 	}
-	const char * end_ptr = ptr;
 
-	buffer_t *value_out = buffer_create_on_heap(len + 1, 0); /* This is how long we need for the string, roughly. */
+	buffer_t *value_out = buffer_create_on_heap(length + 1, 0);
 	if (value_out == NULL) {
 		return NULL;
 	}
 
-	ptr = str + 1;
-	value_out->position = 0;
-	while ((*ptr != '\"') && *ptr && (ptr <= end_ptr)) {
-		if (*ptr != '\\') {
-			value_out->content[value_out->position] = *ptr;
-			ptr++;
-			value_out->position++;
-		} else {
-			ptr++;
-			switch (*ptr)
-			{
+	for (;
+		(input->position < end_position)
+		&& (input->position < input->content_length)
+		&& (input->content[input->position] != '\"')
+		&& (input->content[input->position] != '\0');
+		value_out->position++, input->position++) {
+		if (input->content[input->position] != '\\') { /* regular character */
+			value_out->content[value_out->position] = input->content[input->position];
+		} else { /* special character */
+			input->position++; /* skip initial '\\' */
+			switch (input->content[input->position]) {
 				case 'b':
 					value_out->content[value_out->position] = '\b';
-					value_out->position++;
 					break;
 				case 'f':
 					value_out->content[value_out->position] = '\f';
-					value_out->position++;
 					break;
 				case 'n':
 					value_out->content[value_out->position] = '\n';
-					value_out->position++;
 					break;
 				case 'r':
 					value_out->content[value_out->position] = '\r';
-					value_out->position++;
 					break;
 				case 't':
 					value_out->content[value_out->position] = '\t';
-					value_out->position++;
 					break;
-				case 'u': /* transcode utf16 to utf8. */
-					uc = parse_hex4(ptr + 1) /* get the unicode char. */;
-					ptr += 4;
+				case 'u': {/* transcode utf16 to utf8. */
+						/* FIXME: I don't quite understand this code yet, therefore I can't refactor it */
+						if ((input->position + 4) >= input->content_length) {
+							buffer_destroy_from_heap(value_out);
+							return NULL;
+						}
+						unsigned uc;
+						unsigned uc2;
+						uc = parse_hex4((char*)input->content + input->position + 1) /* get the unicode char. */;
+						input->position += 4;
 
-					if (((uc >= 0xDC00) && (uc <= 0xDFFF)) || (uc == 0)) { /* check for invalid. */
-						break;
-					}
-
-					if ((uc >= 0xD800) && (uc<=0xDBFF)) { /* UTF16 surrogate pairs. */
-						if ((ptr[1] != '\\') || (ptr[2] != 'u')) { /* missing second-half of surrogate. */
+						if (((uc >= 0xDC00) && (uc <= 0xDFFF)) || (uc == 0)) { /* check for invalid */
 							break;
 						}
-						uc2 = parse_hex4(ptr + 3);
-						ptr += 6;
-						if ((uc2 < 0xDC00) || (uc2 > 0xDFFF)) { /* invalid second-half of surrogate. */
-							break;
+
+						if ((uc >= 0xD800) && (uc<=0xDBFF)) { /* UTF16 surrogate pairs. */
+							if ((input->content[input->position + 1] != '\\') || (input->content[input->position + 2] != 'u')) { /* missing second-half of surrogate. */
+								break;
+							}
+							if ((input->position + 6) >= input->content_length) {
+								buffer_destroy_from_heap(value_out);
+								return NULL;
+							}
+							uc2 = parse_hex4((char*)input->content + input->position + 3);
+							input->position += 6;
+							if ((uc2 < 0xDC00) || (uc2 > 0xDFFF)) { /* invalid second-half of surrogate. */
+								break;
+							}
+							uc = 0x10000 + (((uc & 0x3FF) << 10) | (uc2 & 0x3FF));
 						}
-						uc = 0x10000 + (((uc & 0x3FF) << 10) | (uc2 & 0x3FF));
-					}
 
-					len = 4;
-					if (uc < 0x80) {
-						len = 1;
-					} else if (uc < 0x800) {
-						len = 2;
-					} else if (uc < 0x10000) {
-						len = 3;
-						value_out->position += len;
-					}
+						length = 4;
+						if (uc < 0x80) {
+							length = 1;
+						} else if (uc < 0x800) {
+							length = 2;
+						} else if (uc < 0x10000) {
+							length = 3;
+							value_out->position += length;
+						}
 
-					switch (len) {
-						case 4:
-							value_out->position--;
-							value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
-							uc >>= 6;
-						case 3:
-							value_out->position--;
-							value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
-							uc >>= 6;
-						case 2:
-							value_out->position--;
-							value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
-							uc >>= 6;
-						case 1:
-							value_out->position--;
-							value_out->content[value_out->position] = (uc | firstByteMark[len]);
+						static const unsigned char firstByteMark[7] = {0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC};
+						switch (length) {
+							case 4:
+								value_out->position--;
+								value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
+								uc >>= 6;
+							case 3:
+								value_out->position--;
+								value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
+								uc >>= 6;
+							case 2:
+								value_out->position--;
+								value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
+								uc >>= 6;
+							case 1:
+								value_out->position--;
+								value_out->content[value_out->position] = (uc | firstByteMark[length]);
+						}
+						value_out->position += length - 1;
 					}
-					value_out->position += len;
 					break;
 				default:
-					value_out->content[value_out->position] = *ptr;
-					value_out->position++;
+					value_out->content[value_out->position] = input->content[input->position];
 					break;
 			}
-			ptr++;
 		}
 	}
 	/* null terminate the output string */
 	value_out->content[value_out->position] = '\0';
 	value_out->content_length = value_out->position + 1;
-	if (*ptr == '\"') {
-		ptr++;
+	if (input->content[input->position] == '\"') {
+		input->position++;
 	}
 	item->valuestring = value_out;
 	item->type = mcJSON_String;
-	return ptr;
+
+	return (char*)input->content + input->position;
 }
 
 /* Render the cstring provided to an escaped version that can be printed. */
