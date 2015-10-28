@@ -1022,66 +1022,80 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 
 /* Build an object from the text. */
 static const char *parse_object(mcJSON *item, const char *value) {
-	mcJSON *child;
-	if (*value != '{') { /* not an object! */
-		error_pointer = value;
+	buffer_t *input = buffer_create_with_existing_array((unsigned char*)value, strlen(value) + 1);
+
+	if (input->content[input->position] != '{') { /* not an object! */
+		error_pointer = (char*)input->content + input->position;
 		return NULL;
 	}
 
 	item->type = mcJSON_Object;
-	value = skip(value + 1);
-	if (*value=='}') { /* empty object. */
-		return value + 1;
+	value = skip((char*)input->content + input->position + 1);
+	input->position = (unsigned char*)value - input->content;
+	if (input->content[input->position] == '}') { /* empty object. */
+		input->position++;
+		return (char*)input->content + input->position;
 	}
 
-	child = mcJSON_New_Item();
+	mcJSON *child = mcJSON_New_Item();
 	item->child = child;
 	if (item->child == NULL) {
 		return NULL;
 	}
-	value = skip(parse_string(child, skip(value)));
-	if (value == NULL) {
-		return NULL;
-	}
-	child->name = child->valuestring;
-	child->valuestring = NULL;
-	if (*value != ':') { /* fail! */
-		error_pointer = value;
-		return NULL;
-	}
-	value = skip(parse_value(child, skip(value + 1))); /* skip any spacing, get the value. */
-	if (value == NULL) {
-		return NULL;
-	}
 
-	while (*value == ',') {
-		mcJSON *new_item;
-		if ((new_item = mcJSON_New_Item()) == NULL) { /* memory fail */
+	/* parse first key-value pair */
+	value = skip(parse_string(child, skip((char*)input->content + input->position)));
+	if (value == NULL) {
+		return NULL;
+	}
+	input->position = (unsigned char*)value - input->content;
+	child->name = child->valuestring; /* string was parsed to ->valuestring, but it was actually a name */
+	child->valuestring = NULL;
+	if (input->content[input->position] != ':') { /* fail! */
+		error_pointer = (char*)input->content + input->position;
+		return NULL;
+	}
+	input->position++;
+	value = skip(parse_value(child, skip((char*)input->content + input->position))); /* skip any spacing, get the value. */
+	if (value == NULL) {
+		return NULL;
+	}
+	input->position = (unsigned char*)value - input->content;
+
+	while ((input->position < input->buffer_length) && (input->content[input->position] == ',')) {
+		mcJSON *new_item = mcJSON_New_Item();
+		if (new_item == NULL) { /* memory fail */
 			return NULL;
 		}
 		child->next = new_item;
 		new_item->prev = child;
 		child = new_item;
-		value = skip(parse_string(child, skip(value + 1)));
+		input->position++;
+		value = skip(parse_string(child, skip((char*)input->content + input->position)));
 		if (value == NULL) {
 			return NULL;
 		}
+		input->position = (unsigned char*)value - input->content;
 		child->name = child->valuestring;
 		child->valuestring = NULL;
-		if (*value != ':') { /* fail! */
-			error_pointer = value;
+		if (input->content[input->position] != ':') { /* fail! */
+			error_pointer = (char*)input->content + input->position;
 			return NULL;
 		}
-		value = skip(parse_value(child, skip(value + 1))); /* skip any spacing, get the value. */
+		input->position++;
+		value = skip(parse_value(child, skip((char*)input->content + input->position))); /* skip any spacing, get the value. */
 		if (value == NULL) {
 			return NULL;
 		}
+		input->position = (unsigned char*)value - input->content;
 	}
 
-	if (*value == '}') { /* end of object */
-		return value + 1;
+	if (input->content[input->position] == '}') { /* end of object */
+		input->position++;
+		return (char*)input->content + input->position;
 	}
-	error_pointer = value;
+
+	error_pointer = (char*)input->content + input->position;
 	return NULL; /* malformed. */
 }
 
