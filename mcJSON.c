@@ -653,33 +653,57 @@ static const char *parse_value(mcJSON *item, const char *value) {
 	if (value == NULL) { /* Fail on null. */
 		return NULL;
 	}
-	if (!strncmp(value, "null", 4)) {
+	buffer_t *input = buffer_create_with_existing_array((unsigned char*)value, strlen(value) + 1);
+
+	if (buffer_compare_to_raw_partial(input, input->position, (unsigned char*)"null", sizeof("null"), 0, sizeof("null") - 1) == 0) {
 		item->type = mcJSON_NULL;
-		return value + 4;
+		input->position += sizeof("null") - 1;
+		return (char*)input->content + input->position;
 	}
-	if (!strncmp(value, "false", 5)) {
+	if (buffer_compare_to_raw_partial(input, input->position, (unsigned char*)"false", sizeof("false"), 0, sizeof("false") - 1) == 0) {
 		item->type = mcJSON_False;
-		return value + 5;
+		input->position += sizeof("false") - 1;
+		return (char*)input->content + input->position;
 	}
-	if (!strncmp(value, "true", 4)) {
+	if (buffer_compare_to_raw_partial(input, input->position, (unsigned char*)"true", sizeof("true"), 0, sizeof("true") - 1) == 0) {
 		item->type = mcJSON_True;
-		item->valueint = 1;
-		return value + 4;
+		input->position += sizeof("true") - 1;
+		return (char*)input->content + input->position;
 	}
-	if (*value == '\"') {
-		return parse_string(item,value);
+	if (input->content[input->position] == '\"') {
+		value = parse_string(item, (char*)input->content + input->position);
+		if (value == NULL) {
+			return NULL;
+		}
+		input->position = (unsigned char*)value - input->content;
+		return (char*)input->content + input->position;
 	}
-	if ((*value == '-') || ((*value >= '0') && (*value <= '9'))) {
-		return parse_number(item, value);
+	if ((input->content[input->position] == '-') || ((input->content[input->position] >= '0') && (input->content[input->position] <= '9'))) {
+		value = parse_number(item, (char*)input->content + input->position);
+		if (value == NULL) {
+			return NULL;
+		}
+		input->position = (unsigned char*)value - input->content;
+		return (char*)input->content + input->position;
 	}
-	if (*value == '[') {
-		return parse_array(item, value);
+	if (input->content[input->position] == '[') {
+		value = parse_array(item, (char*)input->content + input->position);
+		if (value == NULL) {
+			return NULL;
+		}
+		input->position = (unsigned char*)value - input->content;
+		return (char*)input->content + input->position;
 	}
-	if (*value == '{') {
-		return parse_object(item, value);
+	if (input->content[input->position] == '{') {
+		value = parse_object(item, (char*)input->content + input->position);
+		if (value == NULL) {
+			return NULL;
+		}
+		input->position = (unsigned char*)value - input->content;
+		return (char*)input->content + input->position;
 	}
 
-	error_pointer = value;
+	error_pointer = (char*)input->content + input->position;
 	return NULL; /* failure. */
 }
 
