@@ -602,7 +602,9 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 		return NULL;
 	}
 
-	end = parse_value(root, skip((char*)json->content));
+	json->position = 0; /* TODO could later be replaced with a position parameter */
+	end = parse_value(root, skip((char*)json->content + json->position));
+	json->position = (unsigned char*)end - json->content;
 	if (end == NULL) { /* parse failure. error_pointer is set. */
 		mcJSON_Delete(root);
 		return NULL;
@@ -610,16 +612,18 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 
 	/* if we require null-terminated JSON without appended garbage, skip and then check for a null terminator */
 	if (require_null_terminated) {
-		end = skip(end);
-		if (*end) {
+		end = skip((char*)json->content + json->position);
+		if ((end == NULL) && (json->content[json->position] == '\0')) {
 			mcJSON_Delete(root);
-			error_pointer = end;
+			error_pointer = (char*)json->content + json->position;
 			return NULL;
 		}
 	}
+
 	if (return_parse_end) {
-		*return_parse_end = end;
+		*return_parse_end = (char*)json->content + json->position;
 	}
+
 	return root;
 }
 /* Default options for mcJSON_Parse */
