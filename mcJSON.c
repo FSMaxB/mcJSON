@@ -586,11 +586,13 @@ static const char *parse_object(mcJSON *item, const char *value);
 static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 
 /* Utility to jump whitespace and cr/lf */
-static const char *skip(const char *in) {
-	while (in && *in && ((unsigned char)*in <= 32)) {
-		in++;
+static size_t skip(buffer_t *input) {
+	size_t skipped = 0;
+	while ((input != NULL) && (input->content[input->position] != '\0') && (input->content[input->position] <= 32)) {
+		input->position++;
+		skipped++;
 	}
-	return in;
+	return skipped;
 }
 
 /* Parse an object - create a new root, and populate. */
@@ -603,7 +605,8 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 	}
 
 	json->position = 0; /* TODO could later be replaced with a position parameter */
-	end = parse_value(root, skip((char*)json->content + json->position));
+	skip(json);
+	end = parse_value(root, (char*)json->content + json->position);
 	json->position = (unsigned char*)end - json->content;
 	if (end == NULL) { /* parse failure. error_pointer is set. */
 		mcJSON_Delete(root);
@@ -612,7 +615,7 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 
 	/* if we require null-terminated JSON without appended garbage, skip and then check for a null terminator */
 	if (require_null_terminated) {
-		end = skip((char*)json->content + json->position);
+		skip(json);
 		if ((end == NULL) && (json->content[json->position] == '\0')) {
 			mcJSON_Delete(root);
 			error_pointer = (char*)json->content + json->position;
@@ -821,8 +824,7 @@ static const char *parse_array(mcJSON *item, const char *value) {
 
 	item->type = mcJSON_Array;
 	input->position++;
-	value = skip((char*)input->content + input->position);
-	input->position = (unsigned char*)value - input->content;
+	skip(input);
 	if (input->content[input->position] == ']') { /* empty array. */
 		input->position++;
 		return (char*)input->content + input->position;
@@ -833,11 +835,13 @@ static const char *parse_array(mcJSON *item, const char *value) {
 	if (item->child == NULL) { /* memory fail */
 		return NULL;
 	}
-	value = skip(parse_value(child, skip((char*)input->content + input->position))); /* skip any spacing, get the value. */
+	skip(input);
+	value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
 	if (value == NULL) {
 		return NULL;
 	}
 	input->position = (unsigned char*)value - input->content;
+	skip(input);
 
 	while ((input->position < input->content_length) && (input->content[input->position] == ',')) {
 		mcJSON *new_item = mcJSON_New_Item();
@@ -847,11 +851,13 @@ static const char *parse_array(mcJSON *item, const char *value) {
 		child->next = new_item;
 		new_item->prev = child;
 		input->position++;
-		value = skip(parse_value(new_item, skip((char*)input->content + input->position)));
+		skip(input);
+		value = parse_value(new_item, (char*)input->content + input->position);
+		input->position = (unsigned char*)value - input->content;
+		skip(input);
 		if (value == NULL) { /* memory fail */
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		child = new_item;
 	}
 
@@ -1058,8 +1064,8 @@ static const char *parse_object(mcJSON *item, const char *value) {
 	}
 
 	item->type = mcJSON_Object;
-	value = skip((char*)input->content + input->position + 1);
-	input->position = (unsigned char*)value - input->content;
+	input->position++;
+	skip(input);
 	if (input->content[input->position] == '}') { /* empty object. */
 		input->position++;
 		return (char*)input->content + input->position;
@@ -1072,11 +1078,13 @@ static const char *parse_object(mcJSON *item, const char *value) {
 	}
 
 	/* parse first key-value pair */
-	value = skip(parse_string(child, skip((char*)input->content + input->position)));
+	skip(input);
+	value = parse_string(child, (char*)input->content + input->position);
+	input->position = (unsigned char*)value - input->content;
+	skip(input);
 	if (value == NULL) {
 		return NULL;
 	}
-	input->position = (unsigned char*)value - input->content;
 	child->name = child->valuestring; /* string was parsed to ->valuestring, but it was actually a name */
 	child->valuestring = NULL;
 	if (input->content[input->position] != ':') { /* fail! */
@@ -1084,11 +1092,13 @@ static const char *parse_object(mcJSON *item, const char *value) {
 		return NULL;
 	}
 	input->position++;
-	value = skip(parse_value(child, skip((char*)input->content + input->position))); /* skip any spacing, get the value. */
+	skip(input);
+	value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
+	input->position = (unsigned char*)value - input->content;
+	skip(input);
 	if (value == NULL) {
 		return NULL;
 	}
-	input->position = (unsigned char*)value - input->content;
 
 	while ((input->position < input->buffer_length) && (input->content[input->position] == ',')) {
 		mcJSON *new_item = mcJSON_New_Item();
@@ -1099,11 +1109,13 @@ static const char *parse_object(mcJSON *item, const char *value) {
 		new_item->prev = child;
 		child = new_item;
 		input->position++;
-		value = skip(parse_string(child, skip((char*)input->content + input->position)));
+		skip(input);
+		value = parse_string(child, (char*)input->content + input->position);
+		input->position = (unsigned char*)value - input->content;
+		skip(input);
 		if (value == NULL) {
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		child->name = child->valuestring;
 		child->valuestring = NULL;
 		if (input->content[input->position] != ':') { /* fail! */
@@ -1111,11 +1123,13 @@ static const char *parse_object(mcJSON *item, const char *value) {
 			return NULL;
 		}
 		input->position++;
-		value = skip(parse_value(child, skip((char*)input->content + input->position))); /* skip any spacing, get the value. */
+		skip(input);
+		value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
+		input->position = (unsigned char*)value - input->content;
+		skip(input);
 		if (value == NULL) {
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 	}
 
 	if (input->content[input->position] == '}') { /* end of object */
