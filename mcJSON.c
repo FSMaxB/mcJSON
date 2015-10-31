@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
@@ -232,33 +233,21 @@ static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 	return output;
 }
 
-//TODO does this work with both big and little endian?
-static unsigned parse_hex4(const char *str) {
-	unsigned h = 0;
-	for (unsigned int i = 0; i < 3; i++) {
-		if ((*str >= '0') && (*str <= '9')) {
-			h += (*str) - '0';
-		} else if ((*str >= 'A') && (*str<='F')) {
-			h += 10 + (*str) - 'A';
-		} else if ((*str >= 'a') && (*str <= 'f')) {
-			h += 10 + (*str) - 'a';
-		} else {
-			return 0;
-		}
-		h = h << 4;
-		str++;
-	}
+/* parse a 4 character hexadecimal number, return INT_MAX on failure */
+static unsigned int parse_hex4(const char *str) {
+	buffer_t *input = buffer_create_with_existing_array((unsigned char*)str, strlen(str) + 1);
 
-	if ((*str >= '0') && (*str <= '9')) {
-		h += (*str) - '0';
-	} else if ((*str >= 'A') && (*str<='F')) {
-		h += 10 + (*str) - 'A';
-	} else if ((*str >= 'a') && (*str <= 'f')) {
-		h+= 10 + (*str) - 'a';
-	} else {
-		return 0;
+	if ((input->position + 4) >= input->content_length) {
+		return INT_MAX;
 	}
-	return h;
+	unsigned int number;
+	size_t characters_read = sscanf("%4x", (char*)input->content + input->position, &number);
+	if (characters_read != 4) {
+		return INT_MAX;
+	}
+	input->position += characters_read;
+
+	return number;
 }
 
 /* Parse the input text into an unescaped cstring, and populate item. */
