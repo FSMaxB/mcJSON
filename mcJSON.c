@@ -101,9 +101,7 @@ void mcJSON_Delete(mcJSON *c) {
 }
 
 /* Parse the input text to generate a number, and populate the result into item. */
-static const char *parse_number(mcJSON *item, const char *num) {
-	buffer_t *input = buffer_create_with_existing_array((unsigned char*)num, strlen(num) + 1);
-
+static const char *parse_number(mcJSON *item, buffer_t *input) {
 	char *end_pointer;
 	double number = strtod((char*)input->content + input->position, &end_pointer);
 	input->position = ((unsigned char*)end_pointer) - input->content;
@@ -234,9 +232,7 @@ static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 }
 
 /* parse a 4 character hexadecimal number, return INT_MAX on failure */
-static unsigned int parse_hex4(const char *str) {
-	buffer_t *input = buffer_create_with_existing_array((unsigned char*)str, strlen(str) + 1);
-
+static unsigned int parse_hex4(buffer_t *input) {
 	if ((input->position + 4) >= input->content_length) {
 		return INT_MAX;
 	}
@@ -251,10 +247,8 @@ static unsigned int parse_hex4(const char *str) {
 }
 
 /* Parse the input text into an unescaped cstring, and populate item. */
-static const char *parse_string(mcJSON *item, const char *str) {
-	buffer_t *input = buffer_create_with_existing_array((unsigned char*)str, strlen(str) + 1);
-
-	if (input->content[0] != '\"') { /* not a string! */
+static const char *parse_string(mcJSON *item, buffer_t *input) {
+	if (input->content[input->position] != '\"') { /* not a string! */
 		error_pointer = (char*)input->content;
 		return NULL;
 	}
@@ -314,7 +308,8 @@ static const char *parse_string(mcJSON *item, const char *str) {
 						}
 						unsigned uc;
 						unsigned uc2;
-						uc = parse_hex4((char*)input->content + input->position + 1) /* get the unicode char. */;
+						input->position++;
+						uc = parse_hex4(input) /* get the unicode char. */;
 						input->position += 4;
 
 						if (((uc >= 0xDC00) && (uc <= 0xDFFF)) || (uc == 0)) { /* check for invalid */
@@ -329,8 +324,7 @@ static const char *parse_string(mcJSON *item, const char *str) {
 								buffer_destroy_from_heap(value_out);
 								return NULL;
 							}
-							uc2 = parse_hex4((char*)input->content + input->position + 3);
-							input->position += 6;
+							uc2 = parse_hex4(input);
 							if ((uc2 < 0xDC00) || (uc2 > 0xDFFF)) { /* invalid second-half of surrogate. */
 								break;
 							}
@@ -670,15 +664,14 @@ static const char *parse_value(mcJSON *item, const char *value) {
 		return (char*)input->content + input->position;
 	}
 	if (input->content[input->position] == '\"') {
-		value = parse_string(item, (char*)input->content + input->position);
+		value = parse_string(item, input);
 		if (value == NULL) {
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		return (char*)input->content + input->position;
 	}
 	if ((input->content[input->position] == '-') || ((input->content[input->position] >= '0') && (input->content[input->position] <= '9'))) {
-		value = parse_number(item, (char*)input->content + input->position);
+		value = parse_number(item, input);
 		if (value == NULL) {
 			return NULL;
 		}
@@ -1071,11 +1064,10 @@ static const char *parse_object(mcJSON *item, const char *value) {
 
 	/* parse first key-value pair */
 	skip(input);
-	value = parse_string(child, (char*)input->content + input->position);
+	value = parse_string(child, input);
 	if (value == NULL) {
 		return NULL;
 	}
-	input->position = (unsigned char*)value - input->content;
 	skip(input);
 	child->name = child->valuestring; /* string was parsed to ->valuestring, but it was actually a name */
 	child->valuestring = NULL;
@@ -1102,11 +1094,10 @@ static const char *parse_object(mcJSON *item, const char *value) {
 		child = new_item;
 		input->position++;
 		skip(input);
-		value = parse_string(child, (char*)input->content + input->position);
+		value = parse_string(child, input);
 		if (value == NULL) {
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		skip(input);
 		child->name = child->valuestring;
 		child->valuestring = NULL;
