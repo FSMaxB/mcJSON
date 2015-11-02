@@ -587,8 +587,11 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 
 /* Utility to jump whitespace and cr/lf */
 static size_t skip(buffer_t *input) {
+	if ((input == NULL) || (input->content == NULL)) {
+		return 0;
+	}
 	size_t skipped = 0;
-	while ((input != NULL) && (input->content[input->position] != '\0') && (input->content[input->position] <= 32)) {
+	while ((input->content[input->position] != '\0') && (input->content[input->position] <= 32)) {
 		input->position++;
 		skipped++;
 	}
