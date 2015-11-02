@@ -845,11 +845,11 @@ static const char *parse_array(mcJSON *item, const char *value) {
 		input->position++;
 		skip(input);
 		value = parse_value(new_item, (char*)input->content + input->position);
-		input->position = (unsigned char*)value - input->content;
-		skip(input);
 		if (value == NULL) { /* memory fail */
 			return NULL;
 		}
+		input->position = (unsigned char*)value - input->content;
+		skip(input);
 		child = new_item;
 	}
 
@@ -1072,11 +1072,11 @@ static const char *parse_object(mcJSON *item, const char *value) {
 	/* parse first key-value pair */
 	skip(input);
 	value = parse_string(child, (char*)input->content + input->position);
-	input->position = (unsigned char*)value - input->content;
-	skip(input);
 	if (value == NULL) {
 		return NULL;
 	}
+	input->position = (unsigned char*)value - input->content;
+	skip(input);
 	child->name = child->valuestring; /* string was parsed to ->valuestring, but it was actually a name */
 	child->valuestring = NULL;
 	if (input->content[input->position] != ':') { /* fail! */
@@ -1086,11 +1086,11 @@ static const char *parse_object(mcJSON *item, const char *value) {
 	input->position++;
 	skip(input);
 	value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
-	input->position = (unsigned char*)value - input->content;
-	skip(input);
 	if (value == NULL) {
 		return NULL;
 	}
+	input->position = (unsigned char*)value - input->content;
+	skip(input);
 
 	while ((input->position < input->buffer_length) && (input->content[input->position] == ',')) {
 		mcJSON *new_item = mcJSON_New_Item();
@@ -1103,11 +1103,11 @@ static const char *parse_object(mcJSON *item, const char *value) {
 		input->position++;
 		skip(input);
 		value = parse_string(child, (char*)input->content + input->position);
-		input->position = (unsigned char*)value - input->content;
-		skip(input);
 		if (value == NULL) {
 			return NULL;
 		}
+		input->position = (unsigned char*)value - input->content;
+		skip(input);
 		child->name = child->valuestring;
 		child->valuestring = NULL;
 		if (input->content[input->position] != ':') { /* fail! */
@@ -1117,11 +1117,11 @@ static const char *parse_object(mcJSON *item, const char *value) {
 		input->position++;
 		skip(input);
 		value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
-		input->position = (unsigned char*)value - input->content;
-		skip(input);
 		if (value == NULL) {
 			return NULL;
 		}
+		input->position = (unsigned char*)value - input->content;
+		skip(input);
 	}
 
 	if (input->content[input->position] == '}') { /* end of object */
