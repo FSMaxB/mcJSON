@@ -572,7 +572,7 @@ static buffer_t *print_string(mcJSON *item, buffer_t *buffer) {
 }
 
 /* Predeclare these prototypes. */
-static const char *parse_value(mcJSON *item, const char *value);
+static const char *parse_value(mcJSON *item, buffer_t *input);
 static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 static const char *parse_array(mcJSON *item, buffer_t *input);
 static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
@@ -594,18 +594,19 @@ static size_t skip(buffer_t *input) {
 
 /* Parse an object - create a new root, and populate. */
 mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool require_null_terminated) {
+	/* reset error pointer */
+	access_error_pointer(NULL, true);
+
 	const char *end = NULL;
 	mcJSON *root = mcJSON_New_Item();
-	access_error_pointer(NULL, true); /* reset error_pointer to NULL */
 	if (root == NULL) { /* memory fail */
 		return NULL;
 	}
 
 	json->position = 0; /* TODO could later be replaced with a position parameter */
 	skip(json);
-	end = parse_value(root, (char*)json->content + json->position);
-	json->position = (unsigned char*)end - json->content;
-	if (end == NULL) { /* parse failure. error_pointer is set. */
+	end = parse_value(root, json);
+	if (end == NULL) {
 		access_error_pointer((char*)json->content + json->position, true);
 		mcJSON_Delete(root);
 		return NULL;
@@ -652,13 +653,11 @@ buffer_t *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool format
 	return buffer;
 }
 
-
 /* Parser core - when encountering text, process appropriately. */
-static const char *parse_value(mcJSON *item, const char *value) {
-	if (value == NULL) { /* Fail on null. */
+static const char *parse_value(mcJSON *item, buffer_t *input) {
+	if ((input == NULL) || (input->content == NULL)) {
 		return NULL;
 	}
-	buffer_t *input = buffer_create_with_existing_array((unsigned char*)value, strlen(value) + 1);
 
 	if (buffer_compare_to_raw_partial(input, input->position, (unsigned char*)"null", sizeof("null"), 0, sizeof("null") - 1) == 0) {
 		item->type = mcJSON_NULL;
@@ -675,6 +674,7 @@ static const char *parse_value(mcJSON *item, const char *value) {
 		input->position += sizeof("true") - 1;
 		return (char*)input->content + input->position;
 	}
+	const char *value = NULL;
 	if (input->content[input->position] == '\"') {
 		value = parse_string(item, input);
 		if (value == NULL) {
@@ -830,11 +830,10 @@ static const char *parse_array(mcJSON *item, buffer_t *input) {
 		return NULL;
 	}
 	skip(input);
-	const char *value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
+	const char *value = parse_value(child, input); /* skip any spacing, get the value. */
 	if (value == NULL) {
 		return NULL;
 	}
-	input->position = (unsigned char*)value - input->content;
 	skip(input);
 
 	while ((input->position < input->content_length) && (input->content[input->position] == ',')) {
@@ -846,11 +845,10 @@ static const char *parse_array(mcJSON *item, buffer_t *input) {
 		new_item->prev = child;
 		input->position++;
 		skip(input);
-		value = parse_value(new_item, (char*)input->content + input->position);
+		value = parse_value(new_item, input);
 		if (value == NULL) { /* memory fail */
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		skip(input);
 		child = new_item;
 	}
@@ -1084,11 +1082,10 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 	}
 	input->position++;
 	skip(input);
-	value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
+	value = parse_value(child, input); /* skip any spacing, get the value. */
 	if (value == NULL) {
 		return NULL;
 	}
-	input->position = (unsigned char*)value - input->content;
 	skip(input);
 
 	while ((input->position < input->buffer_length) && (input->content[input->position] == ',')) {
@@ -1113,11 +1110,10 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 		}
 		input->position++;
 		skip(input);
-		value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
+		value = parse_value(child, input); /* skip any spacing, get the value. */
 		if (value == NULL) {
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		skip(input);
 	}
 
