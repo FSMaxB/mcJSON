@@ -565,7 +565,7 @@ static const char *parse_value(mcJSON *item, const char *value);
 static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 static const char *parse_array(mcJSON *item, buffer_t *input);
 static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
-static const char *parse_object(mcJSON *item, const char *value);
+static const char *parse_object(mcJSON *item, buffer_t *input);
 static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 
 /* Utility to jump whitespace and cr/lf */
@@ -686,11 +686,10 @@ static const char *parse_value(mcJSON *item, const char *value) {
 		return (char*)input->content + input->position;
 	}
 	if (input->content[input->position] == '{') {
-		value = parse_object(item, (char*)input->content + input->position);
+		value = parse_object(item, input);
 		if (value == NULL) {
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		return (char*)input->content + input->position;
 	}
 
@@ -1040,9 +1039,10 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 }
 
 /* Build an object from the text. */
-static const char *parse_object(mcJSON *item, const char *value) {
-	buffer_t *input = buffer_create_with_existing_array((unsigned char*)value, strlen(value) + 1);
-
+static const char *parse_object(mcJSON *item, buffer_t *input) {
+	if ((input == NULL) || (input->content == NULL)) {
+		return NULL;
+	}
 	if (input->content[input->position] != '{') { /* not an object! */
 		error_pointer = (char*)input->content + input->position;
 		return NULL;
@@ -1064,7 +1064,7 @@ static const char *parse_object(mcJSON *item, const char *value) {
 
 	/* parse first key-value pair */
 	skip(input);
-	value = parse_string(child, input);
+	const char *value = parse_string(child, input);
 	if (value == NULL) {
 		return NULL;
 	}
