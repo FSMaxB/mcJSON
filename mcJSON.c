@@ -52,12 +52,24 @@
 
 #include <assert.h>
 
-/* error pointer, points to the position
-   in the input where the error happened */
-static const char *error_pointer;
+/* access the error pointer, if write is true,
+ * the pointer get's changed, otherwise it returns
+ * the current error pointer
+ * (this eliminates the need for a global variable) */
+const char *access_error_pointer(const char *pointer, bool write) {
+	/* error pointer, points to the position
+	   in the input where the error happened */
+	static const char *error_pointer = NULL;
+
+	if (write) {
+		error_pointer = pointer;
+	}
+
+	return error_pointer;
+}
 
 const char *mcJSON_GetErrorPtr(void) {
-	return error_pointer;
+	return access_error_pointer(NULL, false);
 }
 
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
@@ -249,7 +261,6 @@ static unsigned int parse_hex4(buffer_t *input) {
 /* Parse the input text into an unescaped cstring, and populate item. */
 static const char *parse_string(mcJSON *item, buffer_t *input) {
 	if (input->content[input->position] != '\"') { /* not a string! */
-		error_pointer = (char*)input->content;
 		return NULL;
 	}
 
@@ -585,7 +596,7 @@ static size_t skip(buffer_t *input) {
 mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool require_null_terminated) {
 	const char *end = NULL;
 	mcJSON *root = mcJSON_New_Item();
-	error_pointer = NULL;
+	access_error_pointer(NULL, true); /* reset error_pointer to NULL */
 	if (root == NULL) { /* memory fail */
 		return NULL;
 	}
@@ -595,6 +606,7 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 	end = parse_value(root, (char*)json->content + json->position);
 	json->position = (unsigned char*)end - json->content;
 	if (end == NULL) { /* parse failure. error_pointer is set. */
+		access_error_pointer((char*)json->content + json->position, true);
 		mcJSON_Delete(root);
 		return NULL;
 	}
@@ -603,8 +615,8 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 	if (require_null_terminated) {
 		skip(json);
 		if ((end == NULL) && (json->content[json->position] == '\0')) {
+			access_error_pointer((char*)json->content + json->position, true);
 			mcJSON_Delete(root);
-			error_pointer = (char*)json->content + json->position;
 			return NULL;
 		}
 	}
@@ -693,7 +705,6 @@ static const char *parse_value(mcJSON *item, const char *value) {
 		return (char*)input->content + input->position;
 	}
 
-	error_pointer = (char*)input->content + input->position;
 	return NULL; /* failure. */
 }
 
@@ -802,7 +813,6 @@ static const char *parse_array(mcJSON *item, buffer_t *input) {
 		return NULL;
 	}
 	if (input->content[input->position] != '[') { /* not an array! */
-		error_pointer = (char*)input->content + input->position;
 		return NULL;
 	}
 
@@ -850,7 +860,6 @@ static const char *parse_array(mcJSON *item, buffer_t *input) {
 		return (char*)input->content + input->position;
 	}
 
-	error_pointer = (char*)input->content + input->position;
 	return NULL; /* malformed. */
 }
 
@@ -1044,7 +1053,6 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 		return NULL;
 	}
 	if (input->content[input->position] != '{') { /* not an object! */
-		error_pointer = (char*)input->content + input->position;
 		return NULL;
 	}
 
@@ -1072,7 +1080,6 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 	child->name = child->valuestring; /* string was parsed to ->valuestring, but it was actually a name */
 	child->valuestring = NULL;
 	if (input->content[input->position] != ':') { /* fail! */
-		error_pointer = (char*)input->content + input->position;
 		return NULL;
 	}
 	input->position++;
@@ -1102,7 +1109,6 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 		child->name = child->valuestring;
 		child->valuestring = NULL;
 		if (input->content[input->position] != ':') { /* fail! */
-			error_pointer = (char*)input->content + input->position;
 			return NULL;
 		}
 		input->position++;
@@ -1120,7 +1126,6 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 		return (char*)input->content + input->position;
 	}
 
-	error_pointer = (char*)input->content + input->position;
 	return NULL; /* malformed. */
 }
 
