@@ -563,7 +563,7 @@ static buffer_t *print_string(mcJSON *item, buffer_t *buffer) {
 /* Predeclare these prototypes. */
 static const char *parse_value(mcJSON *item, const char *value);
 static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
-static const char *parse_array(mcJSON *item, const char *value);
+static const char *parse_array(mcJSON *item, buffer_t *input);
 static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 static const char *parse_object(mcJSON *item, const char *value);
 static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
@@ -679,11 +679,10 @@ static const char *parse_value(mcJSON *item, const char *value) {
 		return (char*)input->content + input->position;
 	}
 	if (input->content[input->position] == '[') {
-		value = parse_array(item, (char*)input->content + input->position);
+		value = parse_array(item, input);
 		if (value == NULL) {
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		return (char*)input->content + input->position;
 	}
 	if (input->content[input->position] == '{') {
@@ -799,9 +798,10 @@ static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *
 }
 
 /* Build an array from input text. */
-static const char *parse_array(mcJSON *item, const char *value) {
-	buffer_t *input = buffer_create_with_existing_array((unsigned char*)value, strlen(value) + 1);
-
+static const char *parse_array(mcJSON *item, buffer_t *input) {
+	if ((input == NULL) || (input->content == NULL)) {
+		return NULL;
+	}
 	if (input->content[input->position] != '[') { /* not an array! */
 		error_pointer = (char*)input->content + input->position;
 		return NULL;
@@ -821,7 +821,7 @@ static const char *parse_array(mcJSON *item, const char *value) {
 		return NULL;
 	}
 	skip(input);
-	value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
+	const char *value = parse_value(child, (char*)input->content + input->position); /* skip any spacing, get the value. */
 	if (value == NULL) {
 		return NULL;
 	}
