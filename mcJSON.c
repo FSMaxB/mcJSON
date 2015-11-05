@@ -113,7 +113,7 @@ void mcJSON_Delete(mcJSON *c) {
 }
 
 /* Parse the input text to generate a number, and populate the result into item. */
-static const char *parse_number(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_number(mcJSON *item, buffer_t *input) {
 	char *end_pointer;
 	double number = strtod((char*)input->content + input->position, &end_pointer);
 	input->position = ((unsigned char*)end_pointer) - input->content;
@@ -122,7 +122,7 @@ static const char *parse_number(mcJSON *item, buffer_t *input) {
 	item->valueint = (int)number;
 	item->type = mcJSON_Number;
 
-	return (char*)input->content + input->position;
+	return input;
 }
 
 static size_t pow2gt(size_t x) {
@@ -259,7 +259,7 @@ static unsigned int parse_hex4(buffer_t *input) {
 }
 
 /* Parse the input text into an unescaped cstring, and populate item. */
-static const char *parse_string(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_string(mcJSON *item, buffer_t *input) {
 	if (input->content[input->position] != '\"') { /* not a string! */
 		return NULL;
 	}
@@ -388,7 +388,7 @@ static const char *parse_string(mcJSON *item, buffer_t *input) {
 	item->valuestring = value_out;
 	item->type = mcJSON_String;
 
-	return (char*)input->content + input->position;
+	return input;
 }
 
 /* Render the cstring provided to an escaped version that can be printed. */
@@ -572,11 +572,11 @@ static buffer_t *print_string(mcJSON *item, buffer_t *buffer) {
 }
 
 /* Predeclare these prototypes. */
-static const char *parse_value(mcJSON *item, buffer_t *input);
+static buffer_t *parse_value(mcJSON *item, buffer_t *input);
 static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
-static const char *parse_array(mcJSON *item, buffer_t *input);
+static buffer_t *parse_array(mcJSON *item, buffer_t *input);
 static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
-static const char *parse_object(mcJSON *item, buffer_t *input);
+static buffer_t *parse_object(mcJSON *item, buffer_t *input);
 static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 
 /* Utility to jump whitespace and cr/lf */
@@ -597,7 +597,6 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 	/* reset error pointer */
 	access_error_pointer(NULL, true);
 
-	const char *end = NULL;
 	mcJSON *root = mcJSON_New_Item();
 	if (root == NULL) { /* memory fail */
 		return NULL;
@@ -605,8 +604,7 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 
 	json->position = 0; /* TODO could later be replaced with a position parameter */
 	skip(json);
-	end = parse_value(root, json);
-	if (end == NULL) {
+	if (parse_value(root, json) == NULL) {
 		access_error_pointer((char*)json->content + json->position, true);
 		mcJSON_Delete(root);
 		return NULL;
@@ -614,15 +612,14 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 
 	/* if we require null-terminated JSON without appended garbage, skip and then check for a null terminator */
 	if (require_null_terminated) {
-		skip(json);
-		if ((end == NULL) && (json->content[json->position] == '\0')) {
+		if (json->content[json->position] == '\0') {
 			access_error_pointer((char*)json->content + json->position, true);
 			mcJSON_Delete(root);
 			return NULL;
 		}
 	}
 
-	if (return_parse_end) {
+	if (return_parse_end != NULL) {
 		*return_parse_end = (char*)json->content + json->position;
 	}
 
@@ -654,7 +651,7 @@ buffer_t *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool format
 }
 
 /* Parser core - when encountering text, process appropriately. */
-static const char *parse_value(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_value(mcJSON *item, buffer_t *input) {
 	if ((input == NULL) || (input->content == NULL)) {
 		return NULL;
 	}
@@ -662,41 +659,29 @@ static const char *parse_value(mcJSON *item, buffer_t *input) {
 	if (buffer_compare_to_raw_partial(input, input->position, (unsigned char*)"null", sizeof("null"), 0, sizeof("null") - 1) == 0) {
 		item->type = mcJSON_NULL;
 		input->position += sizeof("null") - 1;
-		return (char*)input->content + input->position;
+		return input;
 	}
 	if (buffer_compare_to_raw_partial(input, input->position, (unsigned char*)"false", sizeof("false"), 0, sizeof("false") - 1) == 0) {
 		item->type = mcJSON_False;
 		input->position += sizeof("false") - 1;
-		return (char*)input->content + input->position;
+		return input;
 	}
 	if (buffer_compare_to_raw_partial(input, input->position, (unsigned char*)"true", sizeof("true"), 0, sizeof("true") - 1) == 0) {
 		item->type = mcJSON_True;
 		input->position += sizeof("true") - 1;
-		return (char*)input->content + input->position;
+		return input;
 	}
 	if (input->content[input->position] == '\"') {
-		if (parse_string(item, input) == NULL) {
-			return NULL;
-		}
-		return (char*)input->content + input->position;
+		return parse_string(item, input);
 	}
 	if ((input->content[input->position] == '-') || ((input->content[input->position] >= '0') && (input->content[input->position] <= '9'))) {
-		if (parse_number(item, input) == NULL) {
-			return NULL;
-		}
-		return (char*)input->content + input->position;
+		return parse_number(item, input);
 	}
 	if (input->content[input->position] == '[') {
-		if (parse_array(item, input) == NULL) {
-			return NULL;
-		}
-		return (char*)input->content + input->position;
+		return parse_array(item, input);
 	}
 	if (input->content[input->position] == '{') {
-		if (parse_object(item, input) == NULL) {
-			return NULL;
-		}
-		return (char*)input->content + input->position;
+		return parse_object(item, input);
 	}
 
 	return NULL; /* failure. */
@@ -802,7 +787,7 @@ static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *
 }
 
 /* Build an array from input text. */
-static const char *parse_array(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_array(mcJSON *item, buffer_t *input) {
 	if ((input == NULL) || (input->content == NULL)) {
 		return NULL;
 	}
@@ -815,7 +800,7 @@ static const char *parse_array(mcJSON *item, buffer_t *input) {
 	skip(input);
 	if (input->content[input->position] == ']') { /* empty array. */
 		input->position++;
-		return (char*)input->content + input->position;
+		return input;
 	}
 
 	mcJSON *child = mcJSON_New_Item();
@@ -847,7 +832,7 @@ static const char *parse_array(mcJSON *item, buffer_t *input) {
 
 	if (input->content[input->position] == ']') { /* end of array */
 		input->position++;
-		return (char*)input->content + input->position;
+		return input;
 	}
 
 	return NULL; /* malformed. */
@@ -1038,7 +1023,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 }
 
 /* Build an object from the text. */
-static const char *parse_object(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_object(mcJSON *item, buffer_t *input) {
 	if ((input == NULL) || (input->content == NULL)) {
 		return NULL;
 	}
@@ -1051,7 +1036,7 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 	skip(input);
 	if (input->content[input->position] == '}') { /* empty object. */
 		input->position++;
-		return (char*)input->content + input->position;
+		return input;
 	}
 
 	mcJSON *child = mcJSON_New_Item();
@@ -1107,7 +1092,7 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 
 	if (input->content[input->position] == '}') { /* end of object */
 		input->position++;
-		return (char*)input->content + input->position;
+		return input;
 	}
 
 	return NULL; /* malformed. */
