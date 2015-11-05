@@ -580,16 +580,14 @@ static buffer_t *parse_object(mcJSON *item, buffer_t *input);
 static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 
 /* Utility to jump whitespace and cr/lf */
-static size_t skip(buffer_t *input) {
+static buffer_t *skip(buffer_t *input) {
 	if ((input == NULL) || (input->content == NULL)) {
-		return 0;
+		return NULL;
 	}
-	size_t skipped = 0;
 	while ((input->content[input->position] != '\0') && (input->content[input->position] <= 32)) {
 		input->position++;
-		skipped++;
 	}
-	return skipped;
+	return input;
 }
 
 /* Parse an object - create a new root, and populate. */
@@ -603,8 +601,7 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 	}
 
 	json->position = 0; /* TODO could later be replaced with a position parameter */
-	skip(json);
-	if (parse_value(root, json) == NULL) {
+	if (parse_value(root, skip(json)) == NULL) {
 		access_error_pointer((char*)json->content + json->position, true);
 		mcJSON_Delete(root);
 		return NULL;
@@ -808,11 +805,9 @@ static buffer_t *parse_array(mcJSON *item, buffer_t *input) {
 	if (item->child == NULL) { /* memory fail */
 		return NULL;
 	}
-	skip(input);
-	if(parse_value(child, input) == NULL) {
+	if(skip(parse_value(child, skip(input))) == NULL) {
 		return NULL;
 	}
-	skip(input);
 
 	while ((input->position < input->content_length) && (input->content[input->position] == ',')) {
 		mcJSON *new_item = mcJSON_New_Item();
@@ -822,11 +817,9 @@ static buffer_t *parse_array(mcJSON *item, buffer_t *input) {
 		child->next = new_item;
 		new_item->prev = child;
 		input->position++;
-		skip(input);
-		if (parse_value(new_item, input) == NULL) {
+		if (skip(parse_value(new_item, skip(input))) == NULL) {
 			return NULL;
 		}
-		skip(input);
 		child = new_item;
 	}
 
@@ -1046,22 +1039,18 @@ static buffer_t *parse_object(mcJSON *item, buffer_t *input) {
 	}
 
 	/* parse first key-value pair */
-	skip(input);
-	if (parse_string(child, input) == NULL) {
+	if (skip(parse_string(child, skip(input))) == NULL) {
 		return NULL;
 	}
-	skip(input);
 	child->name = child->valuestring; /* string was parsed to ->valuestring, but it was actually a name */
 	child->valuestring = NULL;
 	if (input->content[input->position] != ':') { /* fail! */
 		return NULL;
 	}
 	input->position++;
-	skip(input);
-	if (parse_value(child, input) == NULL) {
+	if (skip(parse_value(child, skip(input))) == NULL) {
 		return NULL;
 	}
-	skip(input);
 
 	while ((input->position < input->buffer_length) && (input->content[input->position] == ',')) {
 		mcJSON *new_item = mcJSON_New_Item();
@@ -1072,22 +1061,18 @@ static buffer_t *parse_object(mcJSON *item, buffer_t *input) {
 		new_item->prev = child;
 		child = new_item;
 		input->position++;
-		skip(input);
-		if (parse_string(child, input) == NULL) {
+		if (skip(parse_string(child, skip(input))) == NULL) {
 			return NULL;
 		}
-		skip(input);
 		child->name = child->valuestring;
 		child->valuestring = NULL;
 		if (input->content[input->position] != ':') { /* fail! */
 			return NULL;
 		}
 		input->position++;
-		skip(input);
-		if (parse_value(child, input) == NULL) {
+		if (skip(parse_value(child, skip(input))) == NULL) {
 			return NULL;
 		}
-		skip(input);
 	}
 
 	if (input->content[input->position] == '}') { /* end of object */
