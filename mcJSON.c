@@ -62,8 +62,8 @@ void mcJSON_InitHooks(mcJSON_Hooks* hooks) {
 		return;
 	}
 
-	mcJSON_malloc = (hooks->malloc_fn) ? hooks->malloc_fn : malloc;
-	mcJSON_free = (hooks->free_fn) ? hooks->free_fn : free;
+	mcJSON_malloc = (hooks->malloc_fn != NULL) ? hooks->malloc_fn : malloc;
+	mcJSON_free = (hooks->free_fn != NULL) ? hooks->free_fn : free;
 }
 
 /* Internal constructor. */
@@ -74,21 +74,21 @@ static mcJSON *mcJSON_New_Item(void) {
 }
 
 /* Delete a mcJSON structure. */
-void mcJSON_Delete(mcJSON *c) {
+void mcJSON_Delete(mcJSON *item) {
 	mcJSON *next;
-	while (c) {
-		next = c->next;
-		if (!(c->type & mcJSON_IsReference) && c->child) {
-			mcJSON_Delete(c->child);
+	while (item != NULL) {
+		next = item->next;
+		if (!(item->type & mcJSON_IsReference) && (item->child != NULL)) {
+			mcJSON_Delete(item->child);
 		}
-		if (!(c->type & mcJSON_IsReference) && (c->valuestring != NULL) && (c->valuestring->content != NULL)) {
-			buffer_destroy_from_heap(c->valuestring);
+		if (!(item->type & mcJSON_IsReference) && (item->valuestring != NULL) && (item->valuestring->content != NULL)) {
+			buffer_destroy_from_heap(item->valuestring);
 		}
-		if (!(c->type & mcJSON_StringIsConst) && (c->name != NULL) && (c->name->content != NULL)) {
-			buffer_destroy_from_heap(c->name);
+		if (!(item->type & mcJSON_StringIsConst) && (item->name != NULL) && (item->name->content != NULL)) {
+			buffer_destroy_from_heap(item->name);
 		}
-		mcJSON_free(c);
-		c = next;
+		mcJSON_free(item);
+		item = next;
 	}
 }
 
