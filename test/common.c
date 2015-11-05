@@ -55,7 +55,7 @@ int doit(buffer_t *input_string, FILE *output_file) {
 	mcJSON *json;
 	json = mcJSON_Parse(input_string);
 	if (json == NULL) {
-		fprintf(stderr, "Error before: [%s]\n", mcJSON_GetErrorPtr());
+		fprintf(stderr, "Error before: [%.*s]\n", (int)input_string->content_length, (char*)input_string->content + input_string->position);
 		return 0;
 	} else {
 		output = mcJSON_Print(json);

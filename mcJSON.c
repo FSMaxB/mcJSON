@@ -52,26 +52,6 @@
 
 #include <assert.h>
 
-/* access the error pointer, if write is true,
- * the pointer get's changed, otherwise it returns
- * the current error pointer
- * (this eliminates the need for a global variable) */
-const char *access_error_pointer(const char *pointer, bool write) {
-	/* error pointer, points to the position
-	   in the input where the error happened */
-	static const char *error_pointer = NULL;
-
-	if (write) {
-		error_pointer = pointer;
-	}
-
-	return error_pointer;
-}
-
-const char *mcJSON_GetErrorPtr(void) {
-	return access_error_pointer(NULL, false);
-}
-
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
 static void (*mcJSON_free)(void *ptr) = free;
 
@@ -592,9 +572,6 @@ static buffer_t *skip(buffer_t *input) {
 
 /* Parse an object - create a new root, and populate. */
 mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t *parse_end, bool require_null_terminated) {
-	/* reset error pointer */
-	access_error_pointer(NULL, true);
-
 	mcJSON *root = mcJSON_New_Item();
 	if (root == NULL) { /* memory fail */
 		return NULL;
@@ -602,7 +579,6 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t *parse_end, bool require_nul
 
 	json->position = 0; /* TODO could later be replaced with a position parameter */
 	if (parse_value(root, skip(json)) == NULL) {
-		access_error_pointer((char*)json->content + json->position, true);
 		mcJSON_Delete(root);
 		return NULL;
 	}
@@ -610,7 +586,6 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t *parse_end, bool require_nul
 	/* if we require null-terminated JSON without appended garbage, skip and then check for a null terminator */
 	if (require_null_terminated) {
 		if (json->content[json->position] == '\0') {
-			access_error_pointer((char*)json->content + json->position, true);
 			mcJSON_Delete(root);
 			return NULL;
 		}

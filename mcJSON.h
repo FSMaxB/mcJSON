@@ -105,9 +105,6 @@ extern mcJSON *mcJSON_GetArrayItem(mcJSON *array,int item);
 /* Get item "string" from object. */
 extern mcJSON *mcJSON_GetObjectItem(mcJSON *object,const char *string);
 
-/* For analysing failed parses. This returns a pointer to the parse error. You'll probably need to look a few chars back to make sense of it. Defined when mcJSON_Parse() returns 0. 0 when mcJSON_Parse() succeeds. */
-extern const char *mcJSON_GetErrorPtr(void);
-
 /* These calls create a mcJSON item of the appropriate type. */
 extern mcJSON *mcJSON_CreateNull(void);
 extern mcJSON *mcJSON_CreateTrue(void);
