@@ -43,8 +43,9 @@
 #ifndef TEST_COMMON_H
 #define TEST_COMMON_H
 
+#include "../buffer/buffer.h"
 
 /* Parse text to JSON, then render back to text, and print!
  * Also print to output_file if it isnt NULL*/
-int doit(char *text, FILE *output_file);
+int doit(buffer_t *input_string, FILE *output_file);
 #endif

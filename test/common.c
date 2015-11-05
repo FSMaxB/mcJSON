@@ -49,11 +49,11 @@
 
 
 /* Parse text to JSON, then render back to text, and print! */
-int doit(char *text, FILE *output_file) {
+int doit(buffer_t *input_string, FILE *output_file) {
 	buffer_t *output = NULL;
 
 	mcJSON *json;
-	json = mcJSON_Parse(text);
+	json = mcJSON_Parse(input_string);
 	if (json == NULL) {
 		fprintf(stderr, "Error before: [%s]\n", mcJSON_GetErrorPtr());
 		return 0;

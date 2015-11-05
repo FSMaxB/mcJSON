@@ -42,6 +42,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "../mcJSON.h"
@@ -258,7 +259,8 @@ int main (int argc, char **argv) {
 
 	/* Process each json textblock by parsing, then rebuilding: */
 	for (size_t i = 0; i < (sizeof(json) / sizeof(char*)); i++) {
-		int status = doit(json[i], output_file);
+		buffer_t *json_buffer = buffer_create_with_existing_array((unsigned char*)json[i], strlen(json[i]) + 1);
+		int status = doit(json_buffer, output_file);
 		if (status == 0) {
 			fprintf(stderr, "ERROR: Failed on text %zi!\n", i);
 			if (output_file != NULL) {
