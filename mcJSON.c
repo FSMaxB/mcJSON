@@ -674,32 +674,26 @@ static const char *parse_value(mcJSON *item, buffer_t *input) {
 		input->position += sizeof("true") - 1;
 		return (char*)input->content + input->position;
 	}
-	const char *value = NULL;
 	if (input->content[input->position] == '\"') {
-		value = parse_string(item, input);
-		if (value == NULL) {
+		if (parse_string(item, input) == NULL) {
 			return NULL;
 		}
 		return (char*)input->content + input->position;
 	}
 	if ((input->content[input->position] == '-') || ((input->content[input->position] >= '0') && (input->content[input->position] <= '9'))) {
-		value = parse_number(item, input);
-		if (value == NULL) {
+		if (parse_number(item, input) == NULL) {
 			return NULL;
 		}
-		input->position = (unsigned char*)value - input->content;
 		return (char*)input->content + input->position;
 	}
 	if (input->content[input->position] == '[') {
-		value = parse_array(item, input);
-		if (value == NULL) {
+		if (parse_array(item, input) == NULL) {
 			return NULL;
 		}
 		return (char*)input->content + input->position;
 	}
 	if (input->content[input->position] == '{') {
-		value = parse_object(item, input);
-		if (value == NULL) {
+		if (parse_object(item, input) == NULL) {
 			return NULL;
 		}
 		return (char*)input->content + input->position;
@@ -830,8 +824,7 @@ static const char *parse_array(mcJSON *item, buffer_t *input) {
 		return NULL;
 	}
 	skip(input);
-	const char *value = parse_value(child, input); /* skip any spacing, get the value. */
-	if (value == NULL) {
+	if(parse_value(child, input) == NULL) {
 		return NULL;
 	}
 	skip(input);
@@ -845,8 +838,7 @@ static const char *parse_array(mcJSON *item, buffer_t *input) {
 		new_item->prev = child;
 		input->position++;
 		skip(input);
-		value = parse_value(new_item, input);
-		if (value == NULL) { /* memory fail */
+		if (parse_value(new_item, input) == NULL) {
 			return NULL;
 		}
 		skip(input);
@@ -1070,8 +1062,7 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 
 	/* parse first key-value pair */
 	skip(input);
-	const char *value = parse_string(child, input);
-	if (value == NULL) {
+	if (parse_string(child, input) == NULL) {
 		return NULL;
 	}
 	skip(input);
@@ -1082,8 +1073,7 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 	}
 	input->position++;
 	skip(input);
-	value = parse_value(child, input); /* skip any spacing, get the value. */
-	if (value == NULL) {
+	if (parse_value(child, input) == NULL) {
 		return NULL;
 	}
 	skip(input);
@@ -1098,8 +1088,7 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 		child = new_item;
 		input->position++;
 		skip(input);
-		value = parse_string(child, input);
-		if (value == NULL) {
+		if (parse_string(child, input) == NULL) {
 			return NULL;
 		}
 		skip(input);
@@ -1110,8 +1099,7 @@ static const char *parse_object(mcJSON *item, buffer_t *input) {
 		}
 		input->position++;
 		skip(input);
-		value = parse_value(child, input); /* skip any spacing, get the value. */
-		if (value == NULL) {
+		if (parse_value(child, input) == NULL) {
 			return NULL;
 		}
 		skip(input);
