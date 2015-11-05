@@ -150,7 +150,7 @@ need to be released. With recurse!=0, it will duplicate any children connected t
 The item->next and ->prev pointers are always zero on return from Duplicate. */
 
 /* ParseWithOpts allows you to require (and check) that the JSON is null terminated, and to retrieve the pointer to the final byte parsed. */
-extern mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool require_null_terminated);
+extern mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t *parse_end, bool require_null_terminated);
 
 extern void mcJSON_Minify(char *json);
 

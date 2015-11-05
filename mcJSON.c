@@ -591,7 +591,7 @@ static buffer_t *skip(buffer_t *input) {
 }
 
 /* Parse an object - create a new root, and populate. */
-mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool require_null_terminated) {
+mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t *parse_end, bool require_null_terminated) {
 	/* reset error pointer */
 	access_error_pointer(NULL, true);
 
@@ -616,8 +616,8 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, const char **return_parse_end, bool
 		}
 	}
 
-	if (return_parse_end != NULL) {
-		*return_parse_end = (char*)json->content + json->position;
+	if (parse_end != NULL) {
+		*parse_end = json->position;
 	}
 
 	return root;
