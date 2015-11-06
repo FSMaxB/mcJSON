@@ -1361,76 +1361,89 @@ size_t mcJSON_GetArraySize(mcJSON *array) {
 	for (size = 0; child != NULL; child = child->next, size++) {}
 	return size;
 }
-mcJSON *mcJSON_GetArrayItem(mcJSON *array, int item) {
-	mcJSON *c = array->child;
-	while (c && (item>0)) {
+
+mcJSON *mcJSON_GetArrayItem(mcJSON *array, size_t item) {
+	mcJSON *child = array->child;
+	while ((child != NULL) && (item > 0)) {
 		item--;
-		c = c->next;
+		child = child->next;
 	}
-	return c;
+	return child;
 }
+
 mcJSON *mcJSON_GetObjectItem(mcJSON *object, const char *string) {
-	mcJSON *c = object->child;
+	mcJSON *child = object->child;
 	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
-	while (c && (buffer_compare(c->name, string_buffer) != 0)) {
-		c = c->next;
+	while ((child != NULL) && (buffer_compare(child->name, string_buffer) != 0)) {
+		child = child->next;
 	}
-	return c;
+	return child;
 }
 
 /* Utility for array list handling. */
-static void suffix_object(mcJSON *prev, mcJSON *item) {
+static void insert_into_object(mcJSON *prev, mcJSON *item) {
 	prev->next = item;
 	item->prev = prev;
 }
+
 /* Utility for handling references. */
 static mcJSON *create_reference(mcJSON *item) {
-	mcJSON *ref = mcJSON_New_Item();
-	if (ref == NULL) {
+	mcJSON *reference = mcJSON_New_Item();
+
+	if (reference == NULL) {
 		return NULL;
 	}
-	memcpy(ref, item, sizeof(mcJSON));
-	ref->name = NULL;
-	ref->type |= mcJSON_IsReference;
-	ref->next = ref->prev = NULL;
-	return ref;
+
+	memcpy(reference, item, sizeof(mcJSON));
+	reference->name = NULL;
+	reference->type |= mcJSON_IsReference;
+	reference->next = reference->prev = NULL;
+
+	return reference;
 }
 
 /* Add item to array/object. */
 void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item) {
-	mcJSON *c = array->child;
+	mcJSON *child = array->child;
+
 	if (item == NULL) {
 		return;
 	}
-	if (c == NULL) {
+
+	if (child == NULL) {
 		array->child = item;
 	} else {
-		while (c && c->next) {
-			c = c->next;
+		while ((child != NULL) && child->next) {
+			child = child->next;
 		}
-		suffix_object(c, item);
+		insert_into_object(child, item);
 	}
 }
+
 void mcJSON_AddItemToObject(mcJSON *object, const char *string, mcJSON *item) {
 	if (item == NULL) {
 		return;
 	}
+
 	if ((item->name != NULL) && (item->name->content != NULL)) {
 		buffer_destroy_from_heap(item->name);
 	}
+
 	size_t length = strlen(string) + 1;
 	item->name = buffer_create_on_heap(length, length);
-	int status = buffer_clone_from_raw(item->name, (unsigned char*)string, length);
-	if (status != 0) {
-		//TODO proper error handling
+	if (buffer_clone_from_raw(item->name, (unsigned char*)string, length) != 0) {
 		return;
 	}
+
 	mcJSON_AddItemToArray(object, item);
 }
+
+/* TODO remove this? */
 void mcJSON_AddItemToObjectCS(mcJSON *object, const char *string, mcJSON *item) {
 	if (item == NULL) {
 		return;
 	}
+
 	if (!(item->type & mcJSON_StringIsConst) && (item->name != NULL) && (item->name->content != NULL)) {
 		buffer_destroy_from_heap(item->name);
 	}
@@ -1445,6 +1458,7 @@ void mcJSON_AddItemToObjectCS(mcJSON *object, const char *string, mcJSON *item) 
 	item->type |= mcJSON_StringIsConst;
 	mcJSON_AddItemToArray(object, item);
 }
+
 void mcJSON_AddItemReferenceToArray(mcJSON *array, mcJSON *item) {
 	mcJSON_AddItemToArray(array,create_reference(item));
 }
@@ -1452,109 +1466,97 @@ void mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON 
 	mcJSON_AddItemToObject(object, string, create_reference(item));
 }
 
-mcJSON *mcJSON_DetachItemFromArray(mcJSON *array, int which) {
-	mcJSON *c = array->child;
-	while (c && (which>0)) {
-		c = c->next;
-		which--;
-	}
-	if (c == NULL) {
+/* detach child from parent */
+mcJSON *detach_item(mcJSON *parent, mcJSON *child) {
+	if (child == NULL) {
 		return NULL;
 	}
-	if (c->prev) {
-		c->prev->next = c->next;
+
+	if (child->prev != NULL) {
+		child->prev->next = child->next;
 	}
-	if (c->next) {
-		c->next->prev = c->prev;
+
+	if (child->next != NULL) {
+		child->next->prev = child->prev;
 	}
-	if (c == array->child) {
-		array->child = c->next;
+
+	if (child == parent->child) {
+		parent->child = child->next;
 	}
-	c->next = NULL;
-	c->prev = NULL;
-	return c;
+
+	child->next = NULL;
+	child->prev = NULL;
+
+	return child;
 }
-void mcJSON_DeleteItemFromArray(mcJSON *array, int which) {
-	mcJSON_Delete(mcJSON_DetachItemFromArray(array, which));
+
+mcJSON *mcJSON_DetachItemFromArray(mcJSON *array, size_t index) {
+	return detach_item(array, mcJSON_GetArrayItem(array, index));
 }
+
+void mcJSON_DeleteItemFromArray(mcJSON *array, size_t index) {
+	mcJSON_Delete(mcJSON_DetachItemFromArray(array, index));
+}
+
 mcJSON *mcJSON_DetachItemFromObject(mcJSON *object, const char *string) {
-	int i = 0;
-	mcJSON *c = object->child;
-	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
-	while (c && (buffer_compare(c->name, string_buffer) != 0)) {
-		i++;
-		c = c->next;
-	}
-	if (c) {
-		return mcJSON_DetachItemFromArray(object, i);
-	}
-	return NULL;
+	return detach_item(object, mcJSON_GetObjectItem(object, string));
 }
+
 void   mcJSON_DeleteItemFromObject(mcJSON *object, const char *string) {
 	mcJSON_Delete(mcJSON_DetachItemFromObject(object, string));
 }
 
+/* insert an item into an array or object after "previous" */
+void insert_item(mcJSON *parent, mcJSON *previous, mcJSON *new_item) {
+	if (previous == NULL) {
+		mcJSON_AddItemToArray(parent, new_item);
+		return;
+	}
+	new_item->next = previous;
+	new_item->prev = previous->prev;
+	previous->prev = new_item;
+	if (previous == parent->child) {
+		parent->child = new_item;
+	} else {
+		new_item->prev->next = new_item;
+	}
+}
+
+void   mcJSON_InsertItemInArray(mcJSON *array, size_t index, mcJSON *new_item) {
+	insert_item(array, mcJSON_GetArrayItem(array, index), new_item);
+}
+
+void replace_item(mcJSON *parent, mcJSON *child, mcJSON *new_item) {
+	if (child == NULL) {
+		return;
+	}
+
+	new_item->next = child->next;
+	new_item->prev = child->prev;
+
+	if (new_item->next) {
+		new_item->next->prev = new_item;
+	}
+
+	if (child == parent->child) {
+		parent->child = new_item;
+	} else {
+		new_item->prev->next = new_item;
+	}
+
+	child->prev = NULL;
+	child->next = NULL;
+
+	mcJSON_Delete(child);
+}
+
 /* Replace array/object items with new ones. */
-void   mcJSON_InsertItemInArray(mcJSON *array, int which, mcJSON *newitem) {
-	mcJSON *c = array->child;
-	while (c && (which > 0)) {
-		c = c->next;
-		which--;
-	}
-	if (c == NULL) {
-		mcJSON_AddItemToArray(array, newitem);
-		return;
-	}
-	newitem->next = c;
-	newitem->prev = c->prev;
-	c->prev = newitem;
-	if (c == array->child) {
-		array->child = newitem;
-	} else {
-		newitem->prev->next = newitem;
-	}
+void mcJSON_ReplaceItemInArray(mcJSON *array, size_t index, mcJSON *new_item) {
+	replace_item(array, mcJSON_GetArrayItem(array, index), new_item);
 }
-void   mcJSON_ReplaceItemInArray(mcJSON *array, int which, mcJSON *newitem) {
-	mcJSON *c = array->child;
-	while (c && (which>0)) {
-		c = c->next;
-		which--;
-	}
-	if (c == NULL) {
-		return;
-	}
-	newitem->next = c->next;
-	newitem->prev = c->prev;
-	if (newitem->next) {
-		newitem->next->prev = newitem;
-	}
-	if (c == array->child) {
-		array->child = newitem;
-	} else {
-		newitem->prev->next = newitem;
-	}
-	c->prev = NULL;
-	c->next = NULL;
-	mcJSON_Delete(c);
-}
-void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *newitem) {
-	int i = 0;
-	mcJSON *c = object->child;
-	buffer_t *string_buffer = buffer_create_with_existing_array((unsigned char*)string, strlen(string) + 1);
-	while (c && (buffer_compare(c->name, string_buffer) != 0)) {
-		i++;
-		c = c->next;
-	}
-	if (c) {
-		size_t length = strlen(string) + 1;
-		newitem->name = buffer_create_on_heap(length, length);
-		int status = buffer_clone_from_raw(newitem->name, (unsigned char*)string, length);
-		if (status != 0) {
-			//TODO proper error handling
-			return;
-		}
-		mcJSON_ReplaceItemInArray(object, i, newitem);
-	}
+
+void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *new_item) {
+	replace_item(object, mcJSON_GetObjectItem(object, string), new_item);
 }
 
 /* Create basic types: */
@@ -1625,53 +1627,37 @@ mcJSON *mcJSON_CreateObject(void) {
 }
 
 /* Create Arrays: */
-mcJSON *mcJSON_CreateIntArray(const int *numbers, int count) {
-	int i;
-	mcJSON *n = NULL;
-	mcJSON *p = NULL;
-	mcJSON *a = mcJSON_CreateArray();
-	for (i = 0; a && (i < count); i++) {
-		n = mcJSON_CreateNumber(numbers[i]);
-		if(i == 0) {
-			a->child = n;
-		} else {
-			suffix_object(p, n);
-		}
-		p = n;
+mcJSON *mcJSON_CreateIntArray(const int *numbers, size_t count) {
+	mcJSON *array = mcJSON_CreateArray();
+	mcJSON *child = array->child;
+	for (size_t i = 0; i < count; i++) {
+		mcJSON *number = mcJSON_CreateNumber((double)numbers[i]);
+		insert_item(array, child, number);
 	}
-	return a;
+
+	return array;
 }
-mcJSON *mcJSON_CreateDoubleArray(const double *numbers, int count) {
-	int i;
-	mcJSON *n = NULL;
-	mcJSON *p = NULL;
-	mcJSON *a = mcJSON_CreateArray();
-	for (i = 0; a && (i < count); i++) {
-		n = mcJSON_CreateNumber(numbers[i]);
-		if (i == 0) {
-			a->child = n;
-		} else {
-			suffix_object(p,n);
-		}
-		p = n;
+
+mcJSON *mcJSON_CreateDoubleArray(const double *numbers, size_t count) {
+	mcJSON *array = mcJSON_CreateArray();
+	mcJSON *child = array->child;
+	for (size_t i = 0; i < count; i++) {
+		mcJSON *number = mcJSON_CreateNumber(numbers[i]);
+		insert_item(array, child, number);
 	}
-	return a;
+
+	return array;
 }
-mcJSON *mcJSON_CreateStringArray(const char **strings, int count) {
-	int i;
-	mcJSON *n = NULL;
-	mcJSON *p = NULL;
-	mcJSON *a = mcJSON_CreateArray();
-	for(i = 0; a && (i < count); i++) {
-		n = mcJSON_CreateString(strings[i]);
-		if (i == 0) {
-			a->child = n;
-		} else {
-			suffix_object(p, n);
-		}
-		p = n;
+
+mcJSON *mcJSON_CreateStringArray(const char **strings, size_t count) {
+	mcJSON *array = mcJSON_CreateArray();
+	mcJSON *child = array->child;
+	for (size_t i = 0; i < count; i++) {
+		mcJSON *string= mcJSON_CreateString(strings[i]);
+		insert_item(array, child, string);
 	}
-	return a;
+
+	return array;
 }
 
 /* Duplication */

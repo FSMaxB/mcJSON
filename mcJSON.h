@@ -101,7 +101,7 @@ extern void mcJSON_Delete(mcJSON *c);
 /* Returns the number of items in an array (or object). */
 extern size_t mcJSON_GetArraySize(mcJSON *array);
 /* Retrieve item number "item" from array "array". Returns NULL if unsuccessful. */
-extern mcJSON *mcJSON_GetArrayItem(mcJSON *array,int item);
+extern mcJSON *mcJSON_GetArrayItem(mcJSON *array, size_t item);
 /* Get item "string" from object. */
 extern mcJSON *mcJSON_GetObjectItem(mcJSON *object,const char *string);
 
@@ -116,9 +116,9 @@ extern mcJSON *mcJSON_CreateArray(void);
 extern mcJSON *mcJSON_CreateObject(void);
 
 /* These utilities create an Array of count items. */
-extern mcJSON *mcJSON_CreateIntArray(const int *numbers,int count);
-extern mcJSON *mcJSON_CreateDoubleArray(const double *numbers,int count);
-extern mcJSON *mcJSON_CreateStringArray(const char **strings,int count);
+extern mcJSON *mcJSON_CreateIntArray(const int *numbers, size_t count);
+extern mcJSON *mcJSON_CreateDoubleArray(const double *numbers, size_t count);
+extern mcJSON *mcJSON_CreateStringArray(const char **strings, size_t count);
 
 /* Append item to the specified array/object. */
 extern void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item);
@@ -129,14 +129,14 @@ extern void mcJSON_AddItemReferenceToArray(mcJSON *array, mcJSON *item);
 extern void mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON *item);
 
 /* Remove/Detatch items from Arrays/Objects. */
-extern mcJSON *mcJSON_DetachItemFromArray(mcJSON *array,int which);
-extern void mcJSON_DeleteItemFromArray(mcJSON *array,int which);
+extern mcJSON *mcJSON_DetachItemFromArray(mcJSON *array, size_t index);
+extern void mcJSON_DeleteItemFromArray(mcJSON *array, size_t index);
 extern mcJSON *mcJSON_DetachItemFromObject(mcJSON *object,const char *string);
 extern void mcJSON_DeleteItemFromObject(mcJSON *object,const char *string);
 
 /* Update array items. */
-extern void mcJSON_InsertItemInArray(mcJSON *array,int which, mcJSON *newitem);	/* Shifts pre-existing items to the right. */
-extern void mcJSON_ReplaceItemInArray(mcJSON *array,int which, mcJSON *newitem);
+extern void mcJSON_InsertItemInArray(mcJSON *array, size_t index, mcJSON *newitem);	/* Shifts pre-existing items to the right. */
+extern void mcJSON_ReplaceItemInArray(mcJSON *array, size_t index, mcJSON *newitem);
 extern void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *newitem);
 
 /* Duplicate a mcJSON item */
