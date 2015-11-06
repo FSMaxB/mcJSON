@@ -1641,22 +1641,6 @@ mcJSON *mcJSON_CreateIntArray(const int *numbers, int count) {
 	}
 	return a;
 }
-mcJSON *mcJSON_CreateFloatArray(const float *numbers, int count) {
-	int i;
-	mcJSON *n = NULL;
-	mcJSON *p = NULL;
-	mcJSON *a = mcJSON_CreateArray();
-	for (i = 0; a && (i < count); i++) {
-		n = mcJSON_CreateNumber(numbers[i]);
-		if (i == 0) {
-			a->child = n;
-		} else {
-			suffix_object(p, n);
-		}
-		p = n;
-	}
-	return a;
-}
 mcJSON *mcJSON_CreateDoubleArray(const double *numbers, int count) {
 	int i;
 	mcJSON *n = NULL;

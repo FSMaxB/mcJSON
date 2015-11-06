@@ -117,7 +117,6 @@ extern mcJSON *mcJSON_CreateObject(void);
 
 /* These utilities create an Array of count items. */
 extern mcJSON *mcJSON_CreateIntArray(const int *numbers,int count);
-extern mcJSON *mcJSON_CreateFloatArray(const float *numbers,int count);
 extern mcJSON *mcJSON_CreateDoubleArray(const double *numbers,int count);
 extern mcJSON *mcJSON_CreateStringArray(const char **strings,int count);
 
