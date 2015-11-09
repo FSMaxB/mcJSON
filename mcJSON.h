@@ -148,7 +148,7 @@ The item->next and ->prev pointers are always zero on return from Duplicate. */
 /* ParseWithOpts allows you to require (and check) that the JSON is null terminated, and to retrieve the pointer to the final byte parsed. */
 extern mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t *parse_end, bool require_null_terminated);
 
-extern void mcJSON_Minify(char *json);
+extern void mcJSON_Minify(buffer_t *json);
 
 /* Macros for creating things quickly. */
 #define mcJSON_AddNullToObject(object,name)		mcJSON_AddItemToObject(object, name, mcJSON_CreateNull())

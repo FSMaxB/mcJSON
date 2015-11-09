@@ -96,5 +96,18 @@ int doit(buffer_t *input_string, FILE *output_file) {
 
 	mcJSON_Delete(json);
 
+	// Test minify
+	buffer_t *minify_buffer = buffer_create_on_heap(input_string->content_length, input_string->content_length);
+	if (buffer_clone(minify_buffer, input_string) != 0) {
+		buffer_destroy_from_heap(minify_buffer);
+		return 0;
+	}
+	mcJSON_Minify(minify_buffer);
+	printf("%.*s\n", (int)minify_buffer->content_length, (char*)minify_buffer->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)minify_buffer->content_length, (char*)minify_buffer->content);
+	}
+	buffer_destroy_from_heap(minify_buffer);
+
 	return 1;
 }

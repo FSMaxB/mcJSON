@@ -1720,39 +1720,74 @@ mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse) {
 	return newitem;
 }
 
-void mcJSON_Minify(char *json) {
-	char *into = json;
-	while (*json) {
+void mcJSON_Minify(buffer_t *json) {
+	json->position = 0;
+	size_t write_position = json->position;
+	while ((json->position < json->content_length) && (json->content[json->position] != '\0')) {
 		/* Whitespace characters. */
-		if (*json == ' ') {
-			json++;
-		} else if (*json == '\t') {
-			json++;
-		} else if (*json == '\r') {
-			json++;
-		} else if (*json == '\n') {
-			json++;
-		} else if ((*json == '/') && (json[1]=='/')) { /* double-slash comments, to end of line. */
-			while (*json && (*json!='\n')) {
-				json++;
-			}
-		} else if ((*json == '/') && (json[1] == '*')) { /* multiline comments. */
-			while (*json && !((*json == '*') && (json[1] == '/'))) {
-				json++;
-			}
-			json += 2;
-		} else if (*json == '\"') { /* string literals, which are \" sensitive. */
-			*into++ = *json++;
-			while (*json && (*json != '\"')) {
-				if (*json=='\\') {
-					*into++ = *json++;
+		switch (json->content[json->position]) {
+			case ' ':
+			case '\t':
+			case '\r':
+			case '\n':
+				json->position++;
+				break;
+			case '/':
+				if ((json->position + 1) >= json->content_length) {
+					break;
 				}
-				*into++ = *json++;
-			}
-			*into++ = *json++;
-		} else { /* All other characters. */
-			*into++ = *json++;
+				switch (json->content[json->position + 1]) {
+					case '/': /* double-slash comment, skip to end of line */
+						while ((json->position < json->content_length) && (json->content[json->position != '\0']) && (json->content[json->position != '\n'])) {
+							json->position++;
+						}
+						break;
+					case '*': /* multiline comment */
+						while (((json->position + 1) < json->content_length)
+								&& (json->content[json->position != '\0'])
+								&& !((json->content[json->position] != '*') && (json->content[json->position] != '/'))) {
+							json->position++;
+						}
+						if ((json->position + 1) < json->content_length) {
+							json->position += 2;
+						}
+						break;
+					default:
+						json->content[write_position] = '/';
+						json->position++;
+						write_position++;
+				}
+			case '\"': /* string literal */
+				json->content[write_position] = '\"';
+				json->position++;
+				write_position++;
+				while ((json->position < json->content_length) && (json->content[json->position] != '\0') && (json->content[json->position] != '\"')) {
+					if (json->content[json->position] == '\\') {
+						if ((json->position + 1) < json->content_length) {
+							json->content[write_position] = '\\';
+							json->position++;
+							write_position++;
+						}
+					}
+					json->content[write_position] = json->content[json->position];
+					json->position++;
+					write_position++;
+				}
+				if (json->position < json->content_length) { /* write closing '"' */
+					json->content[write_position] = '\"';
+					json->position++;
+					write_position++;
+				}
+				break;
+			default: /* normal characters */
+				json->content[write_position] = json->content[json->position];
+				json->position++;
+				write_position++;
 		}
 	}
-	*into = '\0'; /* and null-terminate. */
+	if (write_position < json->content_length) {
+		json->content[write_position] = '\0';
+		write_position++;
+	}
+	json->content_length = write_position;
 }
