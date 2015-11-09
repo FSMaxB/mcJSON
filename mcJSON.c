@@ -55,6 +55,25 @@
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
 static void (*mcJSON_free)(void *ptr) = free;
 
+/* alias buffer_t to mempool_t, the mempool_t type defines a contiguous
+ * chunk of memory that is used for parsing a json into it. */
+typedef buffer_t mempool_t;
+
+void *allocate(size_t size, mempool_t *pool) {
+	if (pool == NULL) { /* no mempool is used, do normal malloc */
+		return mcJSON_malloc(size);
+	}
+
+	if ((pool->position + size) >= pool->buffer_length) { /* not enough space */
+		return NULL;
+	}
+
+	void *pointer = (void*)(pool->content + pool->position);
+	pool->position += size;
+
+	return pointer;
+}
+
 void mcJSON_InitHooks(mcJSON_Hooks* hooks) {
 	if (hooks == NULL) { /* Reset hooks */
 		mcJSON_malloc = malloc;
@@ -68,7 +87,7 @@ void mcJSON_InitHooks(mcJSON_Hooks* hooks) {
 
 /* Internal constructor. */
 static mcJSON *mcJSON_New_Item(void) {
-	mcJSON* node = (mcJSON*)mcJSON_malloc(sizeof(mcJSON));
+	mcJSON* node = (mcJSON*)allocate(sizeof(mcJSON), NULL);
 	if (node) memset(node, 0, sizeof(mcJSON));
 	return node;
 }
@@ -897,7 +916,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 
 	/* unbuffered */
 	/* Allocate an array to hold the values for each */
-	buffer_t **entries = (buffer_t**)mcJSON_malloc(numentries * sizeof(buffer_t*));
+	buffer_t **entries = (buffer_t**)allocate(numentries * sizeof(buffer_t*), NULL);
 	if (entries == NULL) {
 		return NULL;
 	}
@@ -1202,12 +1221,12 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 	/* unbuffered */
 	/* Allocate space for the names and the objects */
 	buffer_t **entries = NULL;
-	entries = (buffer_t**)mcJSON_malloc(numentries * sizeof(buffer_t*));
+	entries = (buffer_t**)allocate(numentries * sizeof(buffer_t*), NULL);
 	if (entries == NULL) {
 		return NULL;
 	}
 	buffer_t **names = NULL;
-	names = (buffer_t**)mcJSON_malloc(numentries * sizeof(buffer_t*));
+	names = (buffer_t**)allocate(numentries * sizeof(buffer_t*), NULL);
 	if (names == NULL) {
 		mcJSON_free(entries);
 		return NULL;
