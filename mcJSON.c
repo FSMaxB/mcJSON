@@ -571,7 +571,7 @@ static buffer_t *skip(buffer_t *input) {
 }
 
 /* Parse an object - create a new root, and populate. */
-mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t *parse_end, bool require_null_terminated) {
+mcJSON *mcJSON_ParseWithOpts(buffer_t *json) {
 	mcJSON *root = mcJSON_New_Item();
 	if (root == NULL) { /* memory fail */
 		return NULL;
@@ -583,23 +583,11 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t *parse_end, bool require_nul
 		return NULL;
 	}
 
-	/* if we require null-terminated JSON without appended garbage, skip and then check for a null terminator */
-	if (require_null_terminated) {
-		if (json->content[json->position] == '\0') {
-			mcJSON_Delete(root);
-			return NULL;
-		}
-	}
-
-	if (parse_end != NULL) {
-		*parse_end = json->position;
-	}
-
 	return root;
 }
 /* Default options for mcJSON_Parse */
 mcJSON *mcJSON_Parse(buffer_t *json) {
-	return mcJSON_ParseWithOpts(json, NULL, false);
+	return mcJSON_ParseWithOpts(json);
 }
 
 /* Render a mcJSON item/entity/structure to text. */
