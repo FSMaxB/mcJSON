@@ -153,22 +153,29 @@ static char* ensure(buffer_t *buffer, size_t needed) {
 	return (char*)buffer->content + buffer->position;
 }
 
+/* allocate a buffer for printing */
+buffer_t *printbuffer_allocate(size_t size, buffer_t *buffer) {
+	/* buffered printing */
+	if (buffer != NULL) {
+		if (ensure(buffer, size) == NULL) { /* allocation failed */
+			if (buffer->content != NULL) {
+				/* if content exists, terminate with '\0', just to make sure */
+				buffer->content[buffer->position] = '\0';
+			}
+		}
+		return buffer;
+	}
+
+	/* allocate new memory (unbuffered printing) */
+	return buffer_create_on_heap(size, size);
+}
+
 /* Render the number nicely from the given item into a string. */
 static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 	buffer_t *output = NULL;
 	double d = item->valuedouble;
 	if (d == 0) { /* zero */
-		if (buffer != NULL) {
-			if(ensure(buffer, 2) == NULL) {
-				if (buffer->content != NULL) {
-					buffer->content[buffer->position] = '\0';
-				}
-				return NULL;
-			}
-			output = buffer;
-		} else {
-			output = buffer_create_on_heap(2, 2); /* special case for 0. */
-		}
+		output = printbuffer_allocate(2, buffer);
 		if (output == NULL) {
 			return NULL;
 		}
@@ -185,17 +192,7 @@ static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 	} else if ((fabs(((double)item->valueint) - d) <= DBL_EPSILON) && (d <= INT_MAX) && (d >= INT_MIN)) {
 		/* number is an integer */
 		static const size_t INT_STRING_SIZE = 21; /* 2^64+1 can be represented in 21 chars. */
-		if (buffer != NULL) {
-			if (ensure(buffer, INT_STRING_SIZE) == NULL) {
-				if (buffer->content != NULL) {
-					buffer->content[buffer->position] = '\0';
-				}
-				return NULL;
-			}
-			output = buffer;
-		} else {
-			output = buffer_create_on_heap(INT_STRING_SIZE, 0);
-		}
+		output = printbuffer_allocate(INT_STRING_SIZE, buffer);
 		if (output == NULL) {
 			return NULL;
 		}
@@ -203,17 +200,7 @@ static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 		output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%d", item->valueint);
 	} else {
 		static const size_t DOUBLE_STRING_SIZE = 64; /* This is a nice tradeoff. */
-		if (buffer != NULL) {
-			if (ensure(buffer, DOUBLE_STRING_SIZE) == NULL) {
-				if (buffer->content != NULL) {
-					buffer->content[buffer->position] = '\0';
-				}
-				return NULL;
-			}
-			output = buffer;
-		} else {
-			output = buffer_create_on_heap(DOUBLE_STRING_SIZE, 0);
-		}
+		output = printbuffer_allocate(DOUBLE_STRING_SIZE, buffer);
 		if (output == NULL) {
 			return NULL;
 		}
@@ -396,17 +383,7 @@ static buffer_t *print_string_ptr(buffer_t *string, buffer_t *buffer) {
 
 	/* empty string */
 	if ((string == NULL) || (string->content_length == 0)) {
-		if (buffer != NULL) {
-			if (ensure(buffer, 3) == NULL) {
-				if (buffer->content != NULL) {
-					buffer->content[buffer->position] = '\0';
-				}
-				return NULL;
-			}
-			output = buffer;
-		} else {
-			output = buffer_create_on_heap(3, 3);
-		}
+		output = printbuffer_allocate(3, buffer);
 		if (output == NULL) {
 			return NULL;
 		}
@@ -444,17 +421,7 @@ static buffer_t *print_string_ptr(buffer_t *string, buffer_t *buffer) {
 	}
 
 	/* allocate output */
-	if (buffer != NULL) { /* buffered */
-		if (ensure(buffer, string->content_length + additional_characters + 3) == NULL) {
-			if (buffer->content != NULL) {
-				buffer->content[buffer->position] = '\0';
-			}
-			return NULL;
-		}
-		output = buffer;
-	} else { /* unbuffered */
-		output = buffer_create_on_heap(string->content_length + additional_characters + 3, string->content_length + additional_characters + 3);
-	}
+	output = printbuffer_allocate(string->content_length + additional_characters + 3, buffer);
 	if (output == NULL) {
 		return NULL;
 	}
@@ -676,10 +643,7 @@ static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *
 	if (buffer != NULL) {
 		switch (item->type) {
 			case mcJSON_NULL:
-				if (ensure(buffer, 5) == NULL) {
-					if (buffer->content != NULL) {
-						buffer->content[buffer->position] = '\0';
-					}
+				if (printbuffer_allocate(5, buffer) == NULL) {
 					return NULL;
 				}
 				if (buffer_copy_from_raw(buffer, buffer->position, (unsigned char*)"null", 0, 5) != 0) {
@@ -691,10 +655,7 @@ static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *
 				buffer->position += 4;
 				break;
 			case mcJSON_False:
-				if (ensure(buffer, 6) == NULL) {
-					if (buffer->content != NULL) {
-						buffer->content[buffer->position] = '\0';
-					}
+				if (printbuffer_allocate(6, buffer) == NULL) {
 					return NULL;
 				}
 				if (buffer_copy_from_raw(buffer, buffer->position, (unsigned char*)"false", 0, 6) != 0) {
@@ -706,10 +667,7 @@ static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *
 				buffer->position += 5;
 				break;
 			case mcJSON_True:
-				if (ensure(buffer, 5) == NULL) {
-					if (buffer->content != NULL) {
-						buffer->content[buffer->position] = '\0';
-					}
+				if (printbuffer_allocate(5, buffer) == NULL) {
 					return NULL;
 				}
 				if (buffer_copy_from_raw(buffer, buffer->position, (unsigned char*)"true", 0, 5) != 0) {
@@ -826,17 +784,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 
 	/* Explicitly handle numentries == 0 */
 	if (numentries == 0) { /* empty array */
-		if (buffer != NULL) {
-			if (ensure(buffer, 3) == NULL) {
-				if (buffer->content != NULL) {
-					buffer->content[buffer->position] = '\0';
-				}
-				return NULL;
-			}
-			output = buffer;
-		} else {
-			output = buffer_create_on_heap(3, 3);
-		}
+		output = printbuffer_allocate(3, buffer);
 		if (output == NULL) {
 			return NULL;
 		}
@@ -862,10 +810,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 	/* buffered */
 	if (buffer != NULL) {
 		/* allocate the buffer */
-		if (ensure(buffer, 1) == NULL) {
-			if (buffer->content != NULL) {
-				buffer->content[buffer->position] = '\0';
-			}
+		if (printbuffer_allocate(1, buffer) == NULL) {
 			return NULL;
 		}
 
@@ -883,10 +828,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 
 			if (child->next != NULL) {
 				size_t length = format ? 2 : 1; /* place for one space needed if format */
-				if(ensure(buffer, length + 1) == NULL) {
-					if (buffer->content != NULL) {
-						buffer->content[buffer->position] = '\0';
-					}
+				if (printbuffer_allocate(length + 1, buffer) == NULL) {
 					return NULL;
 				}
 				buffer->content[buffer->position] = ',';
@@ -899,10 +841,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 			}
 			child = child->next;
 		}
-		if (ensure(buffer, 2) == NULL) {
-			if (buffer->content != NULL) {
-				buffer->content[buffer->position] = '\0';
-			}
+		if (printbuffer_allocate(2, buffer) == NULL) {
 			return NULL;
 		}
 		buffer->content[buffer->position] = ']';
@@ -1081,16 +1020,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 	if (numentries == 0) {
 		/* '{' + '}' + '\0' + format: '\n' + depth */
 		size_t length = format ? depth + 4 : 3;
-		if (buffer != NULL) {
-			if (ensure(buffer, length) == NULL) {
-				if (buffer->content != NULL) {
-					buffer->content[buffer->position] = '\0';
-				}
-			}
-			output = buffer;
-		} else {
-			output = buffer_create_on_heap(length, length);
-		}
+		output = printbuffer_allocate(length, buffer);
 		if (output == NULL) {
 			return NULL;
 		}
@@ -1121,10 +1051,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 	/* buffered */
 	if (buffer != NULL) {
 		/* allocate memory */
-		if (ensure(buffer, format ? 3 : 2) == NULL) {
-			if (buffer->content != NULL) {
-				buffer->content[buffer->position] = '\0';
-			}
+		if (printbuffer_allocate(format ? 3 : 2, buffer) == NULL) {
 			return NULL;
 		}
 
@@ -1140,10 +1067,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 		depth++;
 		while (child != NULL) {
 			if (format) {
-				if (ensure(buffer, depth) == NULL) {
-					if (buffer->content != NULL) {
-						buffer->content[buffer->position] = '\0';
-					}
+				if (printbuffer_allocate(depth, buffer) == NULL) {
 					return NULL;
 				}
 				for (size_t i = 0; i < depth; i++) {
@@ -1159,10 +1083,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 				return NULL;
 			}
 
-			if (ensure(buffer, format ? 2 : 1) == NULL) {
-				if (buffer->content != NULL) {
-					buffer->content[buffer->position] = '\0';
-				}
+			if (printbuffer_allocate(format ? 2 : 1, buffer) == NULL) {
 				return NULL;
 			}
 			buffer->content[buffer->position] = ':';
@@ -1180,10 +1101,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 			}
 
 			size_t length = (format ? 1 : 0) + ((child->next != NULL) ? 1 : 0); /* '\t'? ','? */
-			if (ensure(buffer, length + 1) == NULL) {
-				if (buffer->content != NULL) {
-					buffer->content[buffer->position] = '\0';
-				}
+			if (printbuffer_allocate(length + 1, buffer) == NULL) {
 				return NULL;
 			}
 			if (child->next != NULL) {
@@ -1197,10 +1115,7 @@ static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t 
 			buffer->content[buffer->position] = '\0';
 			child = child->next;
 		}
-		if (ensure(buffer, format ? (depth + 1) : 2) == NULL) { /* (depth - 1) * '\t' + '}' + '\0' */
-			if (buffer->content != NULL) {
-				buffer->content[buffer->position] = '\0';
-			}
+		if (printbuffer_allocate(format ? (depth + 1) : 2, buffer) == NULL) { /* (depth - 1) * '\t' + '}' + '\0' */
 			return NULL;
 		}
 		if (format) {
