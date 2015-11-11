@@ -169,6 +169,30 @@ buffer_t *printbuffer_allocate(size_t size, buffer_t *buffer) {
 	return buffer_create_on_heap(size, size);
 }
 
+/* allocate a molch_buffer for parsing, inside a mempool_t if it exists */
+buffer_t *parsebuffer_allocate(size_t buffer_length, size_t content_length, mempool_t *pool) {
+	if (pool == NULL) { /* unbuffered parsing */
+		return buffer_create_on_heap(buffer_length, content_length);
+	}
+
+	/* buffered parsing */
+	buffer_t *buffer = (buffer_t*) allocate(sizeof(buffer_t), pool);
+	if (buffer == NULL) {
+		return NULL;
+	}
+
+	unsigned char *content = NULL;
+	if (buffer_length != 0) {
+		content = (unsigned char*)allocate(buffer_length, pool);
+		if (content == NULL) {
+			return NULL;
+		}
+	}
+
+	return buffer_init_with_pointer(buffer, content, buffer_length, content_length);
+}
+
+
 /* Render the number nicely from the given item into a string. */
 static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 	buffer_t *output = NULL;
@@ -265,7 +289,7 @@ static buffer_t *parse_string(mcJSON *item, buffer_t *input, mempool_t *pool __a
 		}
 	}
 
-	buffer_t *value_out = buffer_create_on_heap(length + 1, 0);
+	buffer_t *value_out = parsebuffer_allocate(length + 1, 0, pool);
 	if (value_out == NULL) {
 		return NULL;
 	}
@@ -1373,7 +1397,7 @@ void mcJSON_AddItemToObject(mcJSON *object, const char *string, mcJSON *item, me
 	}
 
 	size_t length = strlen(string) + 1;
-	item->name = buffer_create_on_heap(length, length);
+	item->name = parsebuffer_allocate(length, length, pool);
 	if (buffer_clone_from_raw(item->name, (unsigned char*)string, length) != 0) {
 		return;
 	}
@@ -1395,7 +1419,7 @@ void mcJSON_AddItemToObjectCS(mcJSON *object, const char *string, mcJSON *item, 
 	}
 
 	size_t length = strlen(string) + 1;
-	item->name = buffer_create_on_heap(length, length);
+	item->name = parsebuffer_allocate(length, length, pool);
 	int status = buffer_clone_from_raw(item->name, (unsigned char*)string, length);
 	if (status != 0) {
 		//TODO proper error handling
@@ -1548,7 +1572,7 @@ mcJSON *mcJSON_CreateString(const char *string, mempool_t *pool) {
 	if (item) {
 		item->type = mcJSON_String;
 		size_t length = strlen(string) + 1;
-		item->valuestring = buffer_create_on_heap(length, length);
+		item->valuestring = parsebuffer_allocate(length, length, pool);
 		int status = buffer_clone_from_raw(item->valuestring, (unsigned char*)string, length);
 		if (status != 0) {
 			mcJSON_Delete(item);
@@ -1626,7 +1650,7 @@ mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse, mempool_t *pool) {
 	newitem->valueint = item->valueint;
 	newitem->valuedouble = item->valuedouble;
 	if ((item->valuestring != NULL) && (item->valuestring->content != NULL)) {
-		newitem->valuestring = buffer_create_on_heap(item->valuestring->buffer_length, item->valuestring->buffer_length);
+		newitem->valuestring = parsebuffer_allocate(item->valuestring->buffer_length, item->valuestring->buffer_length, pool);
 		int status = buffer_clone(newitem->valuestring, item->valuestring);
 		if (status != 0) {
 			mcJSON_Delete(newitem);
@@ -1634,7 +1658,7 @@ mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse, mempool_t *pool) {
 		}
 	}
 	if ((item->name != NULL) && (item->name->content != NULL)) {
-		newitem->name = buffer_create_on_heap(item->name->buffer_length, item->name->buffer_length);
+		newitem->name = parsebuffer_allocate(item->name->buffer_length, item->name->buffer_length, pool);
 		int status = buffer_clone(newitem->name, item->name);
 		if (status != 0) {
 			mcJSON_Delete(newitem);
