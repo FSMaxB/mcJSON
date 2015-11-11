@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
 	object = mcJSON_CreateObject(NULL);
 	nums = mcJSON_CreateIntArray(numbers, 10, NULL);
 	num6 = mcJSON_GetArrayItem(nums, 6);
-	mcJSON_AddItemToObject(object, "numbers", nums);
+	mcJSON_AddItemToObject(object, "numbers", nums, NULL);
 	char *temp = mcJSONUtils_FindPointerFromObjectTo(object, num6);
 	if (temp == NULL) {
 		fprintf(stderr, "ERROR: JSON Pointer construct 1 failed!\n");
@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
 	sortme = mcJSON_CreateObject(NULL);
 	for (i = 0; i < 26; i++) {
 		buf[0] = random[i];
-		mcJSON_AddItemToObject(sortme, buf, mcJSON_CreateNumber(1, NULL));
+		mcJSON_AddItemToObject(sortme, buf, mcJSON_CreateNumber(1, NULL), NULL);
 	}
 	buffer_t *before = mcJSON_PrintUnformatted(sortme);
 	mcJSONUtils_SortObject(sortme);

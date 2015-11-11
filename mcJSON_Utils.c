@@ -350,13 +350,13 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 		return 9;
 	} else if (parent->type == mcJSON_Array) {
 		if (!strcmp(childptr, "-")) {
-			mcJSON_AddItemToArray(parent,value);
+			mcJSON_AddItemToArray(parent,value, NULL);
 		} else {
-			mcJSON_InsertItemInArray(parent, atoi(childptr), value);
+			mcJSON_InsertItemInArray(parent, atoi(childptr), value, NULL);
 		}
 	} else if (parent->type == mcJSON_Object) {
 		mcJSON_DeleteItemFromObject(parent, childptr);
-		mcJSON_AddItemToObject(parent, childptr, value);
+		mcJSON_AddItemToObject(parent, childptr, value, NULL);
 	} else {
 		mcJSON_Delete(value);
 	}
@@ -384,20 +384,20 @@ int mcJSONUtils_ApplyPatches(mcJSON *object, mcJSON *patches) {
 
 static void mcJSONUtils_GeneratePatch(mcJSON *patches, const char *op, const char *path, const char *suffix, mcJSON *val) {
 	mcJSON *patch = mcJSON_CreateObject(NULL);
-	mcJSON_AddItemToObject(patch, "op", mcJSON_CreateString(op, NULL));
+	mcJSON_AddItemToObject(patch, "op", mcJSON_CreateString(op, NULL), NULL);
 	if (suffix) {
 		size_t length = strlen(path) + mcJSONUtils_PointerEncodedstrlen(suffix) + 2;
 		char *newpath = (char*)malloc(length);
 		mcJSONUtils_PointerEncodedstrcpy(newpath + snprintf(newpath, length, "%s/", path), suffix);
-		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(newpath, NULL));
+		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(newpath, NULL), NULL);
 		free(newpath);
 	} else {
-		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(path, NULL));
+		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(path, NULL), NULL);
 	}
 	if (val) {
-		mcJSON_AddItemToObject(patch, "value", mcJSON_Duplicate(val, 1, NULL));
+		mcJSON_AddItemToObject(patch, "value", mcJSON_Duplicate(val, 1, NULL), NULL);
 	}
-	mcJSON_AddItemToArray(patches, patch);
+	mcJSON_AddItemToArray(patches, patch, NULL);
 }
 
 void mcJSONUtils_AddPatchToArray(mcJSON *array, const char *op, const char *path, mcJSON *val) {
