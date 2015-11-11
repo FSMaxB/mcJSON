@@ -61,6 +61,11 @@ typedef enum mcJSON_Type {
 	mcJSON_Object = 6
 } mcJSON_Type;
 
+/* alias buffer_t to mempool_t, the mempool_t type defines a contiguous
+ * chunk of memory that is used for parsing a json into it. */
+typedef buffer_t mempool_t;
+
+
 #define mcJSON_IsReference 256
 #define mcJSON_StringIsConst 512
 
@@ -89,6 +94,13 @@ extern void mcJSON_InitHooks(mcJSON_Hooks* hooks);
 
 /* Supply a block of JSON, and this returns a mcJSON object you can interrogate. Call mcJSON_Delete when finished. */
 extern mcJSON *mcJSON_Parse(buffer_t *json);
+/* Parse an object - create a new root, and populate.
+ * This supports buffered parsing, a big chunk of memory
+ * is allocated once and the json tree is parsed into it.
+ * The size needs to be large enough otherwise allocation
+ * will fail at some point. */
+extern mcJSON *mcJSON_ParseWithBuffer(buffer_t *json, mempool_t *pool);
+extern mcJSON *mcJSON_ParseBuffered(buffer_t *json, size_t bufer_length);
 /* Render a mcJSON entity to text for transfer/storage. Free the char* when finished. */
 extern buffer_t *mcJSON_Print(mcJSON *item);
 /* Render a mcJSON entity to text for transfer/storage without any formatting. Free the char* when finished. */
@@ -106,27 +118,27 @@ extern mcJSON *mcJSON_GetArrayItem(mcJSON *array, size_t item);
 extern mcJSON *mcJSON_GetObjectItem(mcJSON *object,const char *string);
 
 /* These calls create a mcJSON item of the appropriate type. */
-extern mcJSON *mcJSON_CreateNull(void);
-extern mcJSON *mcJSON_CreateTrue(void);
-extern mcJSON *mcJSON_CreateFalse(void);
-extern mcJSON *mcJSON_CreateBool(int b);
-extern mcJSON *mcJSON_CreateNumber(double num);
-extern mcJSON *mcJSON_CreateString(const char *string);
-extern mcJSON *mcJSON_CreateArray(void);
-extern mcJSON *mcJSON_CreateObject(void);
+extern mcJSON *mcJSON_CreateNull(mempool_t *pool);
+extern mcJSON *mcJSON_CreateTrue(mempool_t *pool);
+extern mcJSON *mcJSON_CreateFalse(mempool_t *pool);
+extern mcJSON *mcJSON_CreateBool(bool b, mempool_t *pool);
+extern mcJSON *mcJSON_CreateNumber(double num, mempool_t *pool);
+extern mcJSON *mcJSON_CreateString(const char *string, mempool_t *pool);
+extern mcJSON *mcJSON_CreateArray(mempool_t *pool);
+extern mcJSON *mcJSON_CreateObject(mempool_t *pool);
 
 /* These utilities create an Array of count items. */
-extern mcJSON *mcJSON_CreateIntArray(const int *numbers, size_t count);
-extern mcJSON *mcJSON_CreateDoubleArray(const double *numbers, size_t count);
-extern mcJSON *mcJSON_CreateStringArray(const char **strings, size_t count);
+extern mcJSON *mcJSON_CreateIntArray(const int *numbers, size_t count, mempool_t *pool);
+extern mcJSON *mcJSON_CreateDoubleArray(const double *numbers, size_t count, mempool_t *pool);
+extern mcJSON *mcJSON_CreateStringArray(const char **strings, size_t count, mempool_t *pool);
 
 /* Append item to the specified array/object. */
-extern void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item);
-extern void mcJSON_AddItemToObject(mcJSON *object,const char *string,mcJSON *item);
-extern void mcJSON_AddItemToObjectCS(mcJSON *object,const char *string,mcJSON *item);	/* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the mcJSON object */
+extern void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item, mempool_t *pool);
+extern void mcJSON_AddItemToObject(mcJSON *object,const char *string,mcJSON *item, mempool_t *pool);
+extern void mcJSON_AddItemToObjectCS(mcJSON *object,const char *string,mcJSON *item, mempool_t *pool);	/* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the mcJSON object */
 /* Append reference to item to the specified array/object. Use this when you want to add an existing mcJSON to a new mcJSON, but don't want to corrupt your existing mcJSON. */
-extern void mcJSON_AddItemReferenceToArray(mcJSON *array, mcJSON *item);
-extern void mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON *item);
+extern void mcJSON_AddItemReferenceToArray(mcJSON *array, mcJSON *item, mempool_t *pool);
+extern void mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON *item, mempool_t *pool);
 
 /* Remove/Detatch items from Arrays/Objects. */
 extern mcJSON *mcJSON_DetachItemFromArray(mcJSON *array, size_t index);
@@ -135,12 +147,12 @@ extern mcJSON *mcJSON_DetachItemFromObject(mcJSON *object,const char *string);
 extern void mcJSON_DeleteItemFromObject(mcJSON *object,const char *string);
 
 /* Update array items. */
-extern void mcJSON_InsertItemInArray(mcJSON *array, size_t index, mcJSON *newitem);	/* Shifts pre-existing items to the right. */
-extern void mcJSON_ReplaceItemInArray(mcJSON *array, size_t index, mcJSON *newitem);
-extern void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *newitem);
+extern void mcJSON_InsertItemInArray(mcJSON *array, size_t index, mcJSON *newitem, mempool_t *pool);	/* Shifts pre-existing items to the right. */
+extern void mcJSON_ReplaceItemInArray(mcJSON *array, size_t index, mcJSON *newitem, mempool_t *pool);
+extern void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *newitem, mempool_t *pool);
 
 /* Duplicate a mcJSON item */
-extern mcJSON *mcJSON_Duplicate(mcJSON *item,int recurse);
+extern mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse, mempool_t *pool);
 /* Duplicate will create a new, identical mcJSON item to the one you pass, in new memory that will
 need to be released. With recurse!=0, it will duplicate any children connected to the item.
 The item->next and ->prev pointers are always zero on return from Duplicate. */
@@ -148,12 +160,12 @@ The item->next and ->prev pointers are always zero on return from Duplicate. */
 extern void mcJSON_Minify(buffer_t *json);
 
 /* Macros for creating things quickly. */
-#define mcJSON_AddNullToObject(object,name)		mcJSON_AddItemToObject(object, name, mcJSON_CreateNull())
-#define mcJSON_AddTrueToObject(object,name)		mcJSON_AddItemToObject(object, name, mcJSON_CreateTrue())
-#define mcJSON_AddFalseToObject(object,name)		mcJSON_AddItemToObject(object, name, mcJSON_CreateFalse())
-#define mcJSON_AddBoolToObject(object,name,b)	mcJSON_AddItemToObject(object, name, mcJSON_CreateBool(b))
-#define mcJSON_AddNumberToObject(object,name,n)	mcJSON_AddItemToObject(object, name, mcJSON_CreateNumber(n))
-#define mcJSON_AddStringToObject(object,name,s)	mcJSON_AddItemToObject(object, name, mcJSON_CreateString(s))
+#define mcJSON_AddNullToObject(object, name, pool) mcJSON_AddItemToObject(object, name, mcJSON_CreateNull(pool), pool)
+#define mcJSON_AddTrueToObject(object,name, pool) mcJSON_AddItemToObject(object, name, mcJSON_CreateTrue(pool), pool)
+#define mcJSON_AddFalseToObject(object, name, pool) mcJSON_AddItemToObject(object, name, mcJSON_CreateFalse(pool), pool)
+#define mcJSON_AddBoolToObject(object, name, b, pool) mcJSON_AddItemToObject(object, name, mcJSON_CreateBool(b, pool), pool)
+#define mcJSON_AddNumberToObject(object, name, n, pool) mcJSON_AddItemToObject(object, name, mcJSON_CreateNumber(n, pool), pool)
+#define mcJSON_AddStringToObject(object, name, s, pool) mcJSON_AddItemToObject(object, name, mcJSON_CreateString(s, pool), pool)
 
 /* When assigning an integer value, it needs to be propagated to valuedouble too. */
 #define mcJSON_SetIntValue(object,val)			((object)?(object)->valueint=(object)->valuedouble=(val):(val))

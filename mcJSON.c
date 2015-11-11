@@ -55,10 +55,6 @@
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
 static void (*mcJSON_free)(void *ptr) = free;
 
-/* alias buffer_t to mempool_t, the mempool_t type defines a contiguous
- * chunk of memory that is used for parsing a json into it. */
-typedef buffer_t mempool_t;
-
 void *allocate(size_t size, mempool_t *pool) {
 	if (pool == NULL) { /* no mempool is used, do normal malloc */
 		return mcJSON_malloc(size);
@@ -86,9 +82,12 @@ void mcJSON_InitHooks(mcJSON_Hooks* hooks) {
 }
 
 /* Internal constructor. */
-static mcJSON *mcJSON_New_Item(void) {
-	mcJSON* node = (mcJSON*)allocate(sizeof(mcJSON), NULL);
-	if (node) memset(node, 0, sizeof(mcJSON));
+static mcJSON *mcJSON_New_Item(mempool_t *pool) {
+	mcJSON* node = (mcJSON*)allocate(sizeof(mcJSON), pool);
+	if (node) {
+		memset(node, 0, sizeof(mcJSON));
+	}
+
 	return node;
 }
 
@@ -170,6 +169,30 @@ buffer_t *printbuffer_allocate(size_t size, buffer_t *buffer) {
 	return buffer_create_on_heap(size, size);
 }
 
+/* allocate a molch_buffer for parsing, inside a mempool_t if it exists */
+buffer_t *parsebuffer_allocate(size_t buffer_length, size_t content_length, mempool_t *pool) {
+	if (pool == NULL) { /* unbuffered parsing */
+		return buffer_create_on_heap(buffer_length, content_length);
+	}
+
+	/* buffered parsing */
+	buffer_t *buffer = (buffer_t*) allocate(sizeof(buffer_t), pool);
+	if (buffer == NULL) {
+		return NULL;
+	}
+
+	unsigned char *content = NULL;
+	if (buffer_length != 0) {
+		content = (unsigned char*)allocate(buffer_length, pool);
+		if (content == NULL) {
+			return NULL;
+		}
+	}
+
+	return buffer_init_with_pointer(buffer, content, buffer_length, content_length);
+}
+
+
 /* Render the number nicely from the given item into a string. */
 static buffer_t *print_number(mcJSON *item, buffer_t *buffer) {
 	buffer_t *output = NULL;
@@ -245,7 +268,7 @@ static unsigned int parse_hex4(buffer_t *input) {
 }
 
 /* Parse the input text into an unescaped cstring, and populate item. */
-static buffer_t *parse_string(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_string(mcJSON *item, buffer_t *input, mempool_t *pool __attribute__((unused))) {
 	if (input->content[input->position] != '\"') { /* not a string! */
 		return NULL;
 	}
@@ -266,7 +289,7 @@ static buffer_t *parse_string(mcJSON *item, buffer_t *input) {
 		}
 	}
 
-	buffer_t *value_out = buffer_create_on_heap(length + 1, 0);
+	buffer_t *value_out = parsebuffer_allocate(length + 1, 0, pool);
 	if (value_out == NULL) {
 		return NULL;
 	}
@@ -538,11 +561,11 @@ static buffer_t *print_string(mcJSON *item, buffer_t *buffer) {
 }
 
 /* Predeclare these prototypes. */
-static buffer_t *parse_value(mcJSON *item, buffer_t *input);
+static buffer_t *parse_value(mcJSON *item, buffer_t *input, mempool_t *pool);
 static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
-static buffer_t *parse_array(mcJSON *item, buffer_t *input);
+static buffer_t *parse_array(mcJSON *item, buffer_t *input, mempool_t *pool);
 static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
-static buffer_t *parse_object(mcJSON *item, buffer_t *input);
+static buffer_t *parse_object(mcJSON *item, buffer_t *input, mempool_t *pool);
 static buffer_t *print_object(mcJSON *item, size_t depth, bool format, buffer_t *buffer);
 
 /* Utility to jump whitespace and cr/lf */
@@ -556,24 +579,48 @@ static buffer_t *skip(buffer_t *input) {
 	return input;
 }
 
-/* Parse an object - create a new root, and populate. */
-mcJSON *mcJSON_ParseWithOpts(buffer_t *json) {
-	mcJSON *root = mcJSON_New_Item();
+/* Parse an object - create a new root, and populate.
+ * This supports buffered parsing, a big chunk of memory
+ * is allocated once and the json tree is parsed into it.
+ * The size needs to be large enough otherwise allocation
+ * will fail at some point. */
+mcJSON *mcJSON_ParseWithBuffer(buffer_t *json, mempool_t *pool){
+	json->position = 0; /* TODO could later be replaced with a position parameter */
+
+	mcJSON *root = mcJSON_New_Item(pool);
 	if (root == NULL) { /* memory fail */
 		return NULL;
 	}
 
-	json->position = 0; /* TODO could later be replaced with a position parameter */
-	if (parse_value(root, skip(json)) == NULL) {
-		mcJSON_Delete(root);
+
+	/* now parse */
+	if (parse_value(root, skip(json), pool) == NULL) {
+		if (pool == NULL) {
+			mcJSON_Delete(root);
+		} else {
+			buffer_destroy_from_heap(pool);
+		}
 		return NULL;
 	}
 
 	return root;
 }
+
+mcJSON *mcJSON_ParseBuffered(buffer_t *input_string, size_t buffer_size) {
+	mempool_t *pool = buffer_create_on_heap(buffer_size, buffer_size);
+	if (pool == NULL) {
+		return NULL;
+	}
+
+	mcJSON *json = mcJSON_ParseWithBuffer(input_string, pool);
+	mcJSON_free(pool); /* free the pool description, not the content */
+
+	return json;
+}
+
 /* Default options for mcJSON_Parse */
 mcJSON *mcJSON_Parse(buffer_t *json) {
-	return mcJSON_ParseWithOpts(json);
+	return mcJSON_ParseWithBuffer(json, NULL);
 }
 
 /* Render a mcJSON item/entity/structure to text. */
@@ -597,7 +644,7 @@ buffer_t *mcJSON_PrintBuffered(mcJSON *item, const size_t prebuffer, bool format
 }
 
 /* Parser core - when encountering text, process appropriately. */
-static buffer_t *parse_value(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_value(mcJSON *item, buffer_t *input, mempool_t *pool) {
 	if ((input == NULL) || (input->content == NULL)) {
 		return NULL;
 	}
@@ -618,16 +665,16 @@ static buffer_t *parse_value(mcJSON *item, buffer_t *input) {
 		return input;
 	}
 	if (input->content[input->position] == '\"') {
-		return parse_string(item, input);
+		return parse_string(item, input, pool);
 	}
 	if ((input->content[input->position] == '-') || ((input->content[input->position] >= '0') && (input->content[input->position] <= '9'))) {
 		return parse_number(item, input);
 	}
 	if (input->content[input->position] == '[') {
-		return parse_array(item, input);
+		return parse_array(item, input, pool);
 	}
 	if (input->content[input->position] == '{') {
-		return parse_object(item, input);
+		return parse_object(item, input, pool);
 	}
 
 	return NULL; /* failure. */
@@ -724,7 +771,7 @@ static buffer_t *print_value(mcJSON *item, size_t depth, bool format, buffer_t *
 }
 
 /* Build an array from input text. */
-static buffer_t *parse_array(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_array(mcJSON *item, buffer_t *input, mempool_t *pool) {
 	if ((input == NULL) || (input->content == NULL)) {
 		return NULL;
 	}
@@ -740,24 +787,24 @@ static buffer_t *parse_array(mcJSON *item, buffer_t *input) {
 		return input;
 	}
 
-	mcJSON *child = mcJSON_New_Item();
+	mcJSON *child = mcJSON_New_Item(pool);
 	item->child = child;
 	if (item->child == NULL) { /* memory fail */
 		return NULL;
 	}
-	if(skip(parse_value(child, skip(input))) == NULL) {
+	if(skip(parse_value(child, skip(input), pool)) == NULL) {
 		return NULL;
 	}
 
 	while ((input->position < input->content_length) && (input->content[input->position] == ',')) {
-		mcJSON *new_item = mcJSON_New_Item();
+		mcJSON *new_item = mcJSON_New_Item(pool);
 		if (new_item == NULL) { /* memory fail */
 			return NULL;
 		}
 		child->next = new_item;
 		new_item->prev = child;
 		input->position++;
-		if (skip(parse_value(new_item, skip(input))) == NULL) {
+		if (skip(parse_value(new_item, skip(input), pool)) == NULL) {
 			return NULL;
 		}
 		child = new_item;
@@ -937,7 +984,7 @@ static buffer_t *print_array(mcJSON *item, size_t depth, bool format, buffer_t *
 }
 
 /* Build an object from the text. */
-static buffer_t *parse_object(mcJSON *item, buffer_t *input) {
+static buffer_t *parse_object(mcJSON *item, buffer_t *input, mempool_t *pool) {
 	if ((input == NULL) || (input->content == NULL)) {
 		return NULL;
 	}
@@ -953,14 +1000,14 @@ static buffer_t *parse_object(mcJSON *item, buffer_t *input) {
 		return input;
 	}
 
-	mcJSON *child = mcJSON_New_Item();
+	mcJSON *child = mcJSON_New_Item(pool);
 	item->child = child;
 	if (item->child == NULL) {
 		return NULL;
 	}
 
 	/* parse first key-value pair */
-	if (skip(parse_string(child, skip(input))) == NULL) {
+	if (skip(parse_string(child, skip(input), pool)) == NULL) {
 		return NULL;
 	}
 	child->name = child->valuestring; /* string was parsed to ->valuestring, but it was actually a name */
@@ -969,12 +1016,12 @@ static buffer_t *parse_object(mcJSON *item, buffer_t *input) {
 		return NULL;
 	}
 	input->position++;
-	if (skip(parse_value(child, skip(input))) == NULL) {
+	if (skip(parse_value(child, skip(input), pool)) == NULL) {
 		return NULL;
 	}
 
 	while ((input->position < input->buffer_length) && (input->content[input->position] == ',')) {
-		mcJSON *new_item = mcJSON_New_Item();
+		mcJSON *new_item = mcJSON_New_Item(pool);
 		if (new_item == NULL) { /* memory fail */
 			return NULL;
 		}
@@ -982,7 +1029,7 @@ static buffer_t *parse_object(mcJSON *item, buffer_t *input) {
 		new_item->prev = child;
 		child = new_item;
 		input->position++;
-		if (skip(parse_string(child, skip(input))) == NULL) {
+		if (skip(parse_string(child, skip(input), pool)) == NULL) {
 			return NULL;
 		}
 		child->name = child->valuestring;
@@ -991,7 +1038,7 @@ static buffer_t *parse_object(mcJSON *item, buffer_t *input) {
 			return NULL;
 		}
 		input->position++;
-		if (skip(parse_value(child, skip(input))) == NULL) {
+		if (skip(parse_value(child, skip(input), pool)) == NULL) {
 			return NULL;
 		}
 	}
@@ -1309,8 +1356,8 @@ static void insert_into_object(mcJSON *prev, mcJSON *item) {
 }
 
 /* Utility for handling references. */
-static mcJSON *create_reference(mcJSON *item) {
-	mcJSON *reference = mcJSON_New_Item();
+static mcJSON *create_reference(mcJSON *item, mempool_t *pool) {
+	mcJSON *reference = mcJSON_New_Item(pool);
 
 	if (reference == NULL) {
 		return NULL;
@@ -1325,7 +1372,7 @@ static mcJSON *create_reference(mcJSON *item) {
 }
 
 /* Add item to array/object. */
-void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item) {
+void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item, mempool_t *pool __attribute__((unused))) {
 	mcJSON *child = array->child;
 
 	if (item == NULL) {
@@ -1342,50 +1389,56 @@ void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item) {
 	}
 }
 
-void mcJSON_AddItemToObject(mcJSON *object, const char *string, mcJSON *item) {
+void mcJSON_AddItemToObject(mcJSON *object, const char *string, mcJSON *item, mempool_t *pool) {
 	if (item == NULL) {
 		return;
 	}
 
 	if ((item->name != NULL) && (item->name->content != NULL)) {
+		if (pool != NULL) { /* can't destroy when using buffered parsing */
+			return;
+		}
 		buffer_destroy_from_heap(item->name);
 	}
 
 	size_t length = strlen(string) + 1;
-	item->name = buffer_create_on_heap(length, length);
+	item->name = parsebuffer_allocate(length, length, pool);
 	if (buffer_clone_from_raw(item->name, (unsigned char*)string, length) != 0) {
 		return;
 	}
 
-	mcJSON_AddItemToArray(object, item);
+	mcJSON_AddItemToArray(object, item, pool);
 }
 
 /* TODO remove this? */
-void mcJSON_AddItemToObjectCS(mcJSON *object, const char *string, mcJSON *item) {
+void mcJSON_AddItemToObjectCS(mcJSON *object, const char *string, mcJSON *item, mempool_t *pool) {
 	if (item == NULL) {
 		return;
 	}
 
 	if (!(item->type & mcJSON_StringIsConst) && (item->name != NULL) && (item->name->content != NULL)) {
+		if (pool != NULL) { /* can't destroy when using buffered parsing */
+			return;
+		}
 		buffer_destroy_from_heap(item->name);
 	}
 
 	size_t length = strlen(string) + 1;
-	item->name = buffer_create_on_heap(length, length);
+	item->name = parsebuffer_allocate(length, length, pool);
 	int status = buffer_clone_from_raw(item->name, (unsigned char*)string, length);
 	if (status != 0) {
 		//TODO proper error handling
 		return;
 	}
 	item->type |= mcJSON_StringIsConst;
-	mcJSON_AddItemToArray(object, item);
+	mcJSON_AddItemToArray(object, item, pool);
 }
 
-void mcJSON_AddItemReferenceToArray(mcJSON *array, mcJSON *item) {
-	mcJSON_AddItemToArray(array,create_reference(item));
+void mcJSON_AddItemReferenceToArray(mcJSON *array, mcJSON *item, mempool_t *pool) {
+	mcJSON_AddItemToArray(array,create_reference(item, pool), pool);
 }
-void mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON *item) {
-	mcJSON_AddItemToObject(object, string, create_reference(item));
+void mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON *item, mempool_t *pool) {
+	mcJSON_AddItemToObject(object, string, create_reference(item, pool), pool);
 }
 
 /* detach child from parent */
@@ -1429,9 +1482,9 @@ void   mcJSON_DeleteItemFromObject(mcJSON *object, const char *string) {
 }
 
 /* insert an item into an array or object after "previous" */
-void insert_item(mcJSON *parent, mcJSON *previous, mcJSON *new_item) {
+void insert_item(mcJSON *parent, mcJSON *previous, mcJSON *new_item, mempool_t *pool) {
 	if (previous == NULL) {
-		mcJSON_AddItemToArray(parent, new_item);
+		mcJSON_AddItemToArray(parent, new_item, pool);
 		return;
 	}
 	new_item->next = previous;
@@ -1444,11 +1497,11 @@ void insert_item(mcJSON *parent, mcJSON *previous, mcJSON *new_item) {
 	}
 }
 
-void   mcJSON_InsertItemInArray(mcJSON *array, size_t index, mcJSON *new_item) {
-	insert_item(array, mcJSON_GetArrayItem(array, index), new_item);
+void   mcJSON_InsertItemInArray(mcJSON *array, size_t index, mcJSON *new_item, mempool_t *pool) {
+	insert_item(array, mcJSON_GetArrayItem(array, index), new_item, pool);
 }
 
-void replace_item(mcJSON *parent, mcJSON *child, mcJSON *new_item) {
+void replace_item(mcJSON *parent, mcJSON *child, mcJSON *new_item, mempool_t *pool __attribute__((unused))) {
 	if (child == NULL) {
 		return;
 	}
@@ -1473,45 +1526,45 @@ void replace_item(mcJSON *parent, mcJSON *child, mcJSON *new_item) {
 }
 
 /* Replace array/object items with new ones. */
-void mcJSON_ReplaceItemInArray(mcJSON *array, size_t index, mcJSON *new_item) {
-	replace_item(array, mcJSON_GetArrayItem(array, index), new_item);
+void mcJSON_ReplaceItemInArray(mcJSON *array, size_t index, mcJSON *new_item, mempool_t *pool) {
+	replace_item(array, mcJSON_GetArrayItem(array, index), new_item, pool);
 }
 
-void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *new_item) {
-	replace_item(object, mcJSON_GetObjectItem(object, string), new_item);
+void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *new_item, mempool_t *pool) {
+	replace_item(object, mcJSON_GetObjectItem(object, string), new_item, pool);
 }
 
 /* Create basic types: */
-mcJSON *mcJSON_CreateNull(void) {
-	mcJSON *item = mcJSON_New_Item();
+mcJSON *mcJSON_CreateNull(mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {
 		item->type = mcJSON_NULL;
 	}
 	return item;
 }
-mcJSON *mcJSON_CreateTrue(void) {
-	mcJSON *item = mcJSON_New_Item();
+mcJSON *mcJSON_CreateTrue(mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {
 		item->type = mcJSON_True;
 	}
 	return item;
 }
-mcJSON *mcJSON_CreateFalse(void) {
-	mcJSON *item = mcJSON_New_Item();
+mcJSON *mcJSON_CreateFalse(mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {
 		item->type = mcJSON_False;
 	}
 	return item;
 }
-mcJSON *mcJSON_CreateBool(int b) {
-	mcJSON *item = mcJSON_New_Item();
+mcJSON *mcJSON_CreateBool(bool b, mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {
 		item->type = b ? mcJSON_True : mcJSON_False;
 	}
 	return item;
 }
-mcJSON *mcJSON_CreateNumber(double num) {
-	mcJSON *item = mcJSON_New_Item();
+mcJSON *mcJSON_CreateNumber(double num, mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {
 		item->type = mcJSON_Number;
 		item->valuedouble = num;
@@ -1519,12 +1572,12 @@ mcJSON *mcJSON_CreateNumber(double num) {
 	}
 	return item;
 }
-mcJSON *mcJSON_CreateString(const char *string) {
-	mcJSON *item = mcJSON_New_Item();
+mcJSON *mcJSON_CreateString(const char *string, mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {
 		item->type = mcJSON_String;
 		size_t length = strlen(string) + 1;
-		item->valuestring = buffer_create_on_heap(length, length);
+		item->valuestring = parsebuffer_allocate(length, length, pool);
 		int status = buffer_clone_from_raw(item->valuestring, (unsigned char*)string, length);
 		if (status != 0) {
 			mcJSON_Delete(item);
@@ -1533,15 +1586,15 @@ mcJSON *mcJSON_CreateString(const char *string) {
 	}
 	return item;
 }
-mcJSON *mcJSON_CreateArray(void) {
-	mcJSON *item = mcJSON_New_Item();
+mcJSON *mcJSON_CreateArray(mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {
 		item->type = mcJSON_Array;
 	}
 	return item;
 }
-mcJSON *mcJSON_CreateObject(void) {
-	mcJSON *item = mcJSON_New_Item();
+mcJSON *mcJSON_CreateObject(mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {
 		item->type = mcJSON_Object;
 	}
@@ -1549,41 +1602,41 @@ mcJSON *mcJSON_CreateObject(void) {
 }
 
 /* Create Arrays: */
-mcJSON *mcJSON_CreateIntArray(const int *numbers, size_t count) {
-	mcJSON *array = mcJSON_CreateArray();
+mcJSON *mcJSON_CreateIntArray(const int *numbers, size_t count, mempool_t *pool) {
+	mcJSON *array = mcJSON_CreateArray(pool);
 	mcJSON *child = array->child;
 	for (size_t i = 0; i < count; i++) {
-		mcJSON *number = mcJSON_CreateNumber((double)numbers[i]);
-		insert_item(array, child, number);
+		mcJSON *number = mcJSON_CreateNumber((double)numbers[i], pool);
+		insert_item(array, child, number, pool);
 	}
 
 	return array;
 }
 
-mcJSON *mcJSON_CreateDoubleArray(const double *numbers, size_t count) {
-	mcJSON *array = mcJSON_CreateArray();
+mcJSON *mcJSON_CreateDoubleArray(const double *numbers, size_t count, mempool_t *pool) {
+	mcJSON *array = mcJSON_CreateArray(pool);
 	mcJSON *child = array->child;
 	for (size_t i = 0; i < count; i++) {
-		mcJSON *number = mcJSON_CreateNumber(numbers[i]);
-		insert_item(array, child, number);
+		mcJSON *number = mcJSON_CreateNumber(numbers[i], pool);
+		insert_item(array, child, number, pool);
 	}
 
 	return array;
 }
 
-mcJSON *mcJSON_CreateStringArray(const char **strings, size_t count) {
-	mcJSON *array = mcJSON_CreateArray();
+mcJSON *mcJSON_CreateStringArray(const char **strings, size_t count, mempool_t *pool) {
+	mcJSON *array = mcJSON_CreateArray(pool);
 	mcJSON *child = array->child;
 	for (size_t i = 0; i < count; i++) {
-		mcJSON *string= mcJSON_CreateString(strings[i]);
-		insert_item(array, child, string);
+		mcJSON *string= mcJSON_CreateString(strings[i], pool);
+		insert_item(array, child, string, pool);
 	}
 
 	return array;
 }
 
 /* Duplication */
-mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse) {
+mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse, mempool_t *pool) {
 	mcJSON *newitem;
 	mcJSON *cptr;
 	mcJSON *nptr = NULL;
@@ -1593,7 +1646,7 @@ mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse) {
 		return NULL;
 	}
 	/* Create new item */
-	newitem = mcJSON_New_Item();
+	newitem = mcJSON_New_Item(pool);
 	if (newitem == NULL) {
 		return NULL;
 	}
@@ -1602,7 +1655,7 @@ mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse) {
 	newitem->valueint = item->valueint;
 	newitem->valuedouble = item->valuedouble;
 	if ((item->valuestring != NULL) && (item->valuestring->content != NULL)) {
-		newitem->valuestring = buffer_create_on_heap(item->valuestring->buffer_length, item->valuestring->buffer_length);
+		newitem->valuestring = parsebuffer_allocate(item->valuestring->buffer_length, item->valuestring->buffer_length, pool);
 		int status = buffer_clone(newitem->valuestring, item->valuestring);
 		if (status != 0) {
 			mcJSON_Delete(newitem);
@@ -1610,7 +1663,7 @@ mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse) {
 		}
 	}
 	if ((item->name != NULL) && (item->name->content != NULL)) {
-		newitem->name = buffer_create_on_heap(item->name->buffer_length, item->name->buffer_length);
+		newitem->name = parsebuffer_allocate(item->name->buffer_length, item->name->buffer_length, pool);
 		int status = buffer_clone(newitem->name, item->name);
 		if (status != 0) {
 			mcJSON_Delete(newitem);
@@ -1624,7 +1677,7 @@ mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse) {
 	/* Walk the ->next chain for the child. */
 	cptr = item->child;
 	while (cptr) {
-		newchild = mcJSON_Duplicate(cptr, 1); /* Duplicate (with recurse) each item in the ->next chain */
+		newchild = mcJSON_Duplicate(cptr, 1, pool); /* Duplicate (with recurse) each item in the ->next chain */
 		if (newchild == NULL) {
 			mcJSON_Delete(newitem);
 			return NULL;
