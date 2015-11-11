@@ -83,14 +83,14 @@ int create_objects(FILE *output_file) {
 	/* Here we construct some JSON standards, from the JSON site. */
 
 	/* Our "Video" datatype: */
-	root = mcJSON_CreateObject();
-	mcJSON_AddItemToObject(root, "name", mcJSON_CreateString("Jack (\"Bee\") Nimble"));
-	mcJSON_AddItemToObject(root, "format", fmt=mcJSON_CreateObject());
-	mcJSON_AddStringToObject(fmt, "type", "rect");
-	mcJSON_AddNumberToObject(fmt, "width", 1920);
-	mcJSON_AddNumberToObject(fmt, "height", 1080);
-	mcJSON_AddFalseToObject (fmt, "interlace");
-	mcJSON_AddNumberToObject(fmt, "frame rate", 24);
+	root = mcJSON_CreateObject(NULL);
+	mcJSON_AddItemToObject(root, "name", mcJSON_CreateString("Jack (\"Bee\") Nimble", NULL));
+	mcJSON_AddItemToObject(root, "format", fmt=mcJSON_CreateObject(NULL));
+	mcJSON_AddStringToObject(fmt, "type", "rect", NULL);
+	mcJSON_AddNumberToObject(fmt, "width", 1920, NULL);
+	mcJSON_AddNumberToObject(fmt, "height", 1080, NULL);
+	mcJSON_AddFalseToObject (fmt, "interlace", NULL);
+	mcJSON_AddNumberToObject(fmt, "frame rate", 24, NULL);
 
 	buffer_t *output = NULL;
 	/* Print to text, Delete the mcJSON, print it, release the string. */
@@ -106,7 +106,7 @@ int create_objects(FILE *output_file) {
 	buffer_destroy_from_heap(output);
 
 	/* Our "days of the week" array: */
-	root = mcJSON_CreateStringArray(strings, 7);
+	root = mcJSON_CreateStringArray(strings, 7, NULL);
 
 	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
@@ -120,9 +120,9 @@ int create_objects(FILE *output_file) {
 	buffer_destroy_from_heap(output);
 
 	/* Our matrix: */
-	root = mcJSON_CreateArray();
+	root = mcJSON_CreateArray(NULL);
 	for (i = 0; i < 3; i++) {
-		mcJSON_AddItemToArray(root, mcJSON_CreateIntArray(numbers[i], 3));
+		mcJSON_AddItemToArray(root, mcJSON_CreateIntArray(numbers[i], 3, NULL));
 	}
 
 	/*mcJSON_ReplaceItemInArray(root,1,mcJSON_CreateString("Replacement")); */
@@ -140,16 +140,16 @@ int create_objects(FILE *output_file) {
 
 
 	/* Our "gallery" item: */
-	root = mcJSON_CreateObject();
-	mcJSON_AddItemToObject(root, "Image", img = mcJSON_CreateObject());
-	mcJSON_AddNumberToObject(img, "Width", 800);
-	mcJSON_AddNumberToObject(img, "Height", 600);
-	mcJSON_AddStringToObject(img, "Title", "View from 15th Floor");
-	mcJSON_AddItemToObject(img, "Thumbnail", thm = mcJSON_CreateObject());
-	mcJSON_AddStringToObject(thm, "Url", "http:/*www.example.com/image/481989943");
-	mcJSON_AddNumberToObject(thm, "Height", 125);
-	mcJSON_AddStringToObject(thm, "Width", "100");
-	mcJSON_AddItemToObject(img, "IDs", mcJSON_CreateIntArray(ids, 4));
+	root = mcJSON_CreateObject(NULL);
+	mcJSON_AddItemToObject(root, "Image", img = mcJSON_CreateObject(NULL));
+	mcJSON_AddNumberToObject(img, "Width", 800, NULL);
+	mcJSON_AddNumberToObject(img, "Height", 600, NULL);
+	mcJSON_AddStringToObject(img, "Title", "View from 15th Floor", NULL);
+	mcJSON_AddItemToObject(img, "Thumbnail", thm = mcJSON_CreateObject(NULL));
+	mcJSON_AddStringToObject(thm, "Url", "http:/*www.example.com/image/481989943", NULL);
+	mcJSON_AddNumberToObject(thm, "Height", 125, NULL);
+	mcJSON_AddStringToObject(thm, "Width", "100", NULL);
+	mcJSON_AddItemToObject(img, "IDs", mcJSON_CreateIntArray(ids, 4, NULL));
 
 	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
@@ -164,20 +164,20 @@ int create_objects(FILE *output_file) {
 
 	/* Our array of "records": */
 
-	root = mcJSON_CreateArray();
+	root = mcJSON_CreateArray(NULL);
 	for (i = 0; i < 2; i++) {
-		mcJSON_AddItemToArray(root, fld = mcJSON_CreateObject());
-		mcJSON_AddStringToObject(fld, "precision", fields[i].precision);
-		mcJSON_AddNumberToObject(fld, "Latitude", fields[i].lat);
-		mcJSON_AddNumberToObject(fld, "Longitude", fields[i].lon);
-		mcJSON_AddStringToObject(fld, "Address", fields[i].address);
-		mcJSON_AddStringToObject(fld, "City", fields[i].city);
-		mcJSON_AddStringToObject(fld, "State", fields[i].state);
-		mcJSON_AddStringToObject(fld, "Zip", fields[i].zip);
-		mcJSON_AddStringToObject(fld, "Country", fields[i].country);
+		mcJSON_AddItemToArray(root, fld = mcJSON_CreateObject(NULL));
+		mcJSON_AddStringToObject(fld, "precision", fields[i].precision, NULL);
+		mcJSON_AddNumberToObject(fld, "Latitude", fields[i].lat, NULL);
+		mcJSON_AddNumberToObject(fld, "Longitude", fields[i].lon, NULL);
+		mcJSON_AddStringToObject(fld, "Address", fields[i].address, NULL);
+		mcJSON_AddStringToObject(fld, "City", fields[i].city, NULL);
+		mcJSON_AddStringToObject(fld, "State", fields[i].state, NULL);
+		mcJSON_AddStringToObject(fld, "Zip", fields[i].zip, NULL);
+		mcJSON_AddStringToObject(fld, "Country", fields[i].country, NULL);
 	}
 
-	/*	mcJSON_ReplaceItemInObject(mcJSON_GetArrayItem(root,1),"City",mcJSON_CreateIntArray(ids,4)); */
+	/*	mcJSON_ReplaceItemInObject(mcJSON_GetArrayItem(root,1),"City",mcJSON_CreateIntArray(ids,4,NULL)); */
 
 	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
@@ -190,8 +190,8 @@ int create_objects(FILE *output_file) {
 	}
 	buffer_destroy_from_heap(output);
 
-	root = mcJSON_CreateObject();
-	mcJSON_AddNumberToObject(root, "number", 1.0/0.0);
+	root = mcJSON_CreateObject(NULL);
+	mcJSON_AddNumberToObject(root, "number", 1.0/0.0, NULL);
 
 	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
@@ -205,9 +205,9 @@ int create_objects(FILE *output_file) {
 	buffer_destroy_from_heap(output);
 
 	/* Check mcJSON_GetObjectItem and make sure it's case sensitive */
-	root = mcJSON_CreateObject();
-	mcJSON_AddNumberToObject(root, "a", 1);
-	mcJSON_AddNumberToObject(root, "A", 2);
+	root = mcJSON_CreateObject(NULL);
+	mcJSON_AddNumberToObject(root, "a", 1, NULL);
+	mcJSON_AddNumberToObject(root, "A", 2, NULL);
 
 	output = mcJSON_Print(root);
 	if (output == NULL) {

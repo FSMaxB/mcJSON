@@ -312,7 +312,7 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 			return 5;
 		}
 		if (opcode == 4) {
-			value = mcJSON_Duplicate(value, 1);
+			value = mcJSON_Duplicate(value, 1, NULL);
 		}
 		if (value == NULL) { /* out of memory for copy/move. */
 			return 6;
@@ -322,7 +322,7 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 		if (value == NULL) { /* missing "value" for add/replace. */
 			return 7;
 		}
-		value = mcJSON_Duplicate(value, 1);
+		value = mcJSON_Duplicate(value, 1, NULL);
 		if (value == NULL) { /* out of memory for add/replace. */
 			return 8;
 		}
@@ -383,19 +383,19 @@ int mcJSONUtils_ApplyPatches(mcJSON *object, mcJSON *patches) {
 }
 
 static void mcJSONUtils_GeneratePatch(mcJSON *patches, const char *op, const char *path, const char *suffix, mcJSON *val) {
-	mcJSON *patch = mcJSON_CreateObject();
-	mcJSON_AddItemToObject(patch, "op", mcJSON_CreateString(op));
+	mcJSON *patch = mcJSON_CreateObject(NULL);
+	mcJSON_AddItemToObject(patch, "op", mcJSON_CreateString(op, NULL));
 	if (suffix) {
 		size_t length = strlen(path) + mcJSONUtils_PointerEncodedstrlen(suffix) + 2;
 		char *newpath = (char*)malloc(length);
 		mcJSONUtils_PointerEncodedstrcpy(newpath + snprintf(newpath, length, "%s/", path), suffix);
-		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(newpath));
+		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(newpath, NULL));
 		free(newpath);
 	} else {
-		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(path));
+		mcJSON_AddItemToObject(patch, "path", mcJSON_CreateString(path, NULL));
 	}
 	if (val) {
-		mcJSON_AddItemToObject(patch, "value", mcJSON_Duplicate(val, 1));
+		mcJSON_AddItemToObject(patch, "value", mcJSON_Duplicate(val, 1, NULL));
 	}
 	mcJSON_AddItemToArray(patches, patch);
 }
@@ -484,7 +484,7 @@ static void mcJSONUtils_CompareToPatch(mcJSON *patches, const char *path, mcJSON
 
 
 mcJSON* mcJSONUtils_GeneratePatches(mcJSON *from, mcJSON *to) {
-	mcJSON *patches = mcJSON_CreateArray();
+	mcJSON *patches = mcJSON_CreateArray(NULL);
 	mcJSONUtils_CompareToPatch(patches, "", from, to);
 	return patches;
 }

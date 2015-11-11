@@ -203,8 +203,8 @@ int main(int argc, char **argv) {
 	if (output_file != NULL) {
 		fprintf(output_file, "JSON Pointer construct\n");
 	}
-	object = mcJSON_CreateObject();
-	nums = mcJSON_CreateIntArray(numbers, 10);
+	object = mcJSON_CreateObject(NULL);
+	nums = mcJSON_CreateIntArray(numbers, 10, NULL);
 	num6 = mcJSON_GetArrayItem(nums, 6);
 	mcJSON_AddItemToObject(object, "numbers", nums);
 	char *temp = mcJSONUtils_FindPointerFromObjectTo(object, num6);
@@ -263,10 +263,10 @@ int main(int argc, char **argv) {
 	/*TODO do some cleanup */
 
 	/* JSON Sort test: */
-	sortme = mcJSON_CreateObject();
+	sortme = mcJSON_CreateObject(NULL);
 	for (i = 0; i < 26; i++) {
 		buf[0] = random[i];
-		mcJSON_AddItemToObject(sortme, buf, mcJSON_CreateNumber(1));
+		mcJSON_AddItemToObject(sortme, buf, mcJSON_CreateNumber(1, NULL));
 	}
 	buffer_t *before = mcJSON_PrintUnformatted(sortme);
 	mcJSONUtils_SortObject(sortme);
