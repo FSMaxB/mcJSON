@@ -94,6 +94,13 @@ extern void mcJSON_InitHooks(mcJSON_Hooks* hooks);
 
 /* Supply a block of JSON, and this returns a mcJSON object you can interrogate. Call mcJSON_Delete when finished. */
 extern mcJSON *mcJSON_Parse(buffer_t *json);
+/* Parse an object - create a new root, and populate.
+ * This supports buffered parsing, a big chunk of memory
+ * is allocated once and the json tree is parsed into it.
+ * The size needs to be large enough otherwise allocation
+ * will fail at some point. */
+extern mcJSON *mcJSON_ParseWithBuffer(buffer_t *json, mempool_t *pool);
+extern mcJSON *mcJSON_ParseBuffered(buffer_t *json, size_t bufer_length);
 /* Render a mcJSON entity to text for transfer/storage. Free the char* when finished. */
 extern buffer_t *mcJSON_Print(mcJSON *item);
 /* Render a mcJSON entity to text for transfer/storage without any formatting. Free the char* when finished. */

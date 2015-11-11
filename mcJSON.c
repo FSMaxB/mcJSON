@@ -584,15 +584,8 @@ static buffer_t *skip(buffer_t *input) {
  * is allocated once and the json tree is parsed into it.
  * The size needs to be large enough otherwise allocation
  * will fail at some point. */
-mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t buffer_size) {
+mcJSON *mcJSON_ParseWithBuffer(buffer_t *json, mempool_t *pool){
 	json->position = 0; /* TODO could later be replaced with a position parameter */
-	mempool_t *pool = NULL;
-	if (buffer_size != 0) { /* buffered parsing */
-		pool = buffer_create_on_heap(buffer_size, buffer_size);
-		if (pool == NULL) {
-			return NULL;
-		}
-	}
 
 	mcJSON *root = mcJSON_New_Item(pool);
 	if (root == NULL) { /* memory fail */
@@ -613,9 +606,21 @@ mcJSON *mcJSON_ParseWithOpts(buffer_t *json, size_t buffer_size) {
 	return root;
 }
 
+mcJSON *mcJSON_ParseBuffered(buffer_t *input_string, size_t buffer_size) {
+	mempool_t *pool = buffer_create_on_heap(buffer_size, buffer_size);
+	if (pool == NULL) {
+		return NULL;
+	}
+
+	mcJSON *json = mcJSON_ParseWithBuffer(input_string, pool);
+	mcJSON_free(pool); /* free the pool description, not the content */
+
+	return json;
+}
+
 /* Default options for mcJSON_Parse */
 mcJSON *mcJSON_Parse(buffer_t *json) {
-	return mcJSON_ParseWithOpts(json, 0);
+	return mcJSON_ParseWithBuffer(json, NULL);
 }
 
 /* Render a mcJSON item/entity/structure to text. */
