@@ -613,7 +613,9 @@ mcJSON *mcJSON_ParseBuffered(buffer_t *input_string, size_t buffer_size) {
 	}
 
 	mcJSON *json = mcJSON_ParseWithBuffer(input_string, pool);
-	mcJSON_free(pool); /* free the pool description, not the content */
+	if (json != NULL) {
+		mcJSON_free(pool); /* free the pool description, not the content */
+	}
 
 	return json;
 }
