@@ -89,7 +89,7 @@ int main (int argc, char **argv) {
 	for (size_t i = 0; i < (sizeof(json) / sizeof(struct entry)); i++) {
 		buffer_t *json_buffer = buffer_create_with_existing_array((unsigned char*)json[i].string, strlen(json[i].string) + 1);
 		mcJSON *json_tree = mcJSON_ParseBuffered(json_buffer, json[i].length);
-		if (json == NULL) {
+		if (json_tree == NULL) {
 			fprintf(stderr, "ERROR: Failed on text %zi!\n", i);
 			if (output_file != NULL) {
 				fclose(output_file);
