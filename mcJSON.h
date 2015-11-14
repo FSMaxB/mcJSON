@@ -124,6 +124,7 @@ extern mcJSON *mcJSON_CreateFalse(mempool_t *pool);
 extern mcJSON *mcJSON_CreateBool(bool b, mempool_t *pool);
 extern mcJSON *mcJSON_CreateNumber(double num, mempool_t *pool);
 extern mcJSON *mcJSON_CreateString(buffer_t *string, mempool_t *pool);
+extern mcJSON *mcJSON_CreateHexString(buffer_t *binary, mempool_t *pool); /* create a hex string from binary input */
 extern mcJSON *mcJSON_CreateArray(mempool_t *pool);
 extern mcJSON *mcJSON_CreateObject(mempool_t *pool);
 

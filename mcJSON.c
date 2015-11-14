@@ -1578,12 +1578,34 @@ mcJSON *mcJSON_CreateString(buffer_t *string, mempool_t *pool) {
 		item->valuestring = parsebuffer_allocate(string->content_length, string->content_length, pool);
 		int status = buffer_clone(item->valuestring, string);
 		if (status != 0) {
-			mcJSON_Delete(item);
+			if (pool != NULL) {
+				mcJSON_Delete(item);
+			}
 			return NULL;
 		}
 	}
 	return item;
 }
+
+mcJSON *mcJSON_CreateHexString(buffer_t *binary, mempool_t *pool) {
+	mcJSON *item = mcJSON_New_Item(pool);
+	if (item == NULL) {
+		return NULL;
+	}
+
+	item->type = mcJSON_String;
+	item->valuestring = parsebuffer_allocate(binary->content_length * 2 + 1, binary->content_length * 2 + 1, pool);
+
+	if (buffer_clone_as_hex(item->valuestring, binary) != 0) {
+		if (pool != NULL) {
+			mcJSON_Delete(item);
+		}
+		return NULL;
+	}
+
+	return item;
+}
+
 mcJSON *mcJSON_CreateArray(mempool_t *pool) {
 	mcJSON *item = mcJSON_New_Item(pool);
 	if (item) {

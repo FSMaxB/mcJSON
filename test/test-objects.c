@@ -273,6 +273,7 @@ int create_objects(FILE *output_file) {
 
 	output = mcJSON_Print(root);
 	if (output == NULL) {
+		mcJSON_Delete(root);
 		return EXIT_FAILURE;
 	}
 	printf("%.*s\n", (int)output->content_length, (char*)output->content);
@@ -290,6 +291,25 @@ int create_objects(FILE *output_file) {
 		fprintf(stderr, "ERROR: Failed to get item from object.\n");
 		return EXIT_FAILURE;
 	}
+	mcJSON_Delete(root);
+
+	/* test creation of hex strings */
+	root = mcJSON_CreateHexString(buffer_create_from_string("\r\n"), NULL);
+	if (root == NULL) {
+		return EXIT_FAILURE;
+	}
+
+	output = mcJSON_Print(root);
+	if (output == NULL) {
+		mcJSON_Delete(root);
+		return EXIT_FAILURE;
+	}
+	/* TODO: Make function that does this! */
+	printf("%.*s\n", (int)output->content_length, (char*)output->content);
+	if (output_file != NULL) {
+		fprintf(output_file, "%.*s\n", (int)output->content_length, (char*)output->content);
+	}
+	buffer_destroy_from_heap(output);
 	mcJSON_Delete(root);
 
 	return 0;
