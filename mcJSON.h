@@ -115,7 +115,7 @@ extern size_t mcJSON_GetArraySize(mcJSON *array);
 /* Retrieve item number "item" from array "array". Returns NULL if unsuccessful. */
 extern mcJSON *mcJSON_GetArrayItem(mcJSON *array, size_t item);
 /* Get item "string" from object. */
-extern mcJSON *mcJSON_GetObjectItem(mcJSON *object,const char *string);
+extern mcJSON *mcJSON_GetObjectItem(mcJSON *object, buffer_t *string);
 
 /* These calls create a mcJSON item of the appropriate type. */
 extern mcJSON *mcJSON_CreateNull(mempool_t *pool);
@@ -123,33 +123,33 @@ extern mcJSON *mcJSON_CreateTrue(mempool_t *pool);
 extern mcJSON *mcJSON_CreateFalse(mempool_t *pool);
 extern mcJSON *mcJSON_CreateBool(bool b, mempool_t *pool);
 extern mcJSON *mcJSON_CreateNumber(double num, mempool_t *pool);
-extern mcJSON *mcJSON_CreateString(const char *string, mempool_t *pool);
+extern mcJSON *mcJSON_CreateString(buffer_t *string, mempool_t *pool);
 extern mcJSON *mcJSON_CreateArray(mempool_t *pool);
 extern mcJSON *mcJSON_CreateObject(mempool_t *pool);
 
 /* These utilities create an Array of count items. */
 extern mcJSON *mcJSON_CreateIntArray(const int *numbers, size_t count, mempool_t *pool);
 extern mcJSON *mcJSON_CreateDoubleArray(const double *numbers, size_t count, mempool_t *pool);
-extern mcJSON *mcJSON_CreateStringArray(const char **strings, size_t count, mempool_t *pool);
+extern mcJSON *mcJSON_CreateStringArray(buffer_t **strings, size_t count, mempool_t *pool);
 
 /* Append item to the specified array/object. */
 extern void mcJSON_AddItemToArray(mcJSON *array, mcJSON *item, mempool_t *pool);
-extern void mcJSON_AddItemToObject(mcJSON *object,const char *string,mcJSON *item, mempool_t *pool);
-extern void mcJSON_AddItemToObjectCS(mcJSON *object,const char *string,mcJSON *item, mempool_t *pool);	/* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the mcJSON object */
+extern void mcJSON_AddItemToObject(mcJSON *object, buffer_t *string, mcJSON *item, mempool_t *pool);
+extern void mcJSON_AddItemToObjectCS(mcJSON *object, buffer_t *string, mcJSON *item, mempool_t *pool);	/* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the mcJSON object */
 /* Append reference to item to the specified array/object. Use this when you want to add an existing mcJSON to a new mcJSON, but don't want to corrupt your existing mcJSON. */
 extern void mcJSON_AddItemReferenceToArray(mcJSON *array, mcJSON *item, mempool_t *pool);
-extern void mcJSON_AddItemReferenceToObject(mcJSON *object, const char *string, mcJSON *item, mempool_t *pool);
+extern void mcJSON_AddItemReferenceToObject(mcJSON *object, buffer_t *string, mcJSON *item, mempool_t *pool);
 
 /* Remove/Detatch items from Arrays/Objects. */
 extern mcJSON *mcJSON_DetachItemFromArray(mcJSON *array, size_t index);
 extern void mcJSON_DeleteItemFromArray(mcJSON *array, size_t index);
-extern mcJSON *mcJSON_DetachItemFromObject(mcJSON *object,const char *string);
-extern void mcJSON_DeleteItemFromObject(mcJSON *object,const char *string);
+extern mcJSON *mcJSON_DetachItemFromObject(mcJSON *object, buffer_t *string);
+extern void mcJSON_DeleteItemFromObject(mcJSON *object, buffer_t *string);
 
 /* Update array items. */
 extern void mcJSON_InsertItemInArray(mcJSON *array, size_t index, mcJSON *newitem, mempool_t *pool);	/* Shifts pre-existing items to the right. */
 extern void mcJSON_ReplaceItemInArray(mcJSON *array, size_t index, mcJSON *newitem, mempool_t *pool);
-extern void mcJSON_ReplaceItemInObject(mcJSON *object, const char *string, mcJSON *newitem, mempool_t *pool);
+extern void mcJSON_ReplaceItemInObject(mcJSON *object, buffer_t *string, mcJSON *newitem, mempool_t *pool);
 
 /* Duplicate a mcJSON item */
 extern mcJSON *mcJSON_Duplicate(mcJSON *item, int recurse, mempool_t *pool);
