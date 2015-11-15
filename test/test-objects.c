@@ -145,7 +145,7 @@ int create_objects(FILE *output_file) {
 	buffer_destroy_from_heap(output);
 
 	/* Our "days of the week" array: */
-	root = mcJSON_CreateStringArray(strings, 7, NULL);
+	root = mcJSON_CreateStringArray((const buffer_t **)strings, 7, NULL);
 
 	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
