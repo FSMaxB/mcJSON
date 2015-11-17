@@ -1374,6 +1374,10 @@ static mcJSON *create_reference(const mcJSON * const item, mempool_t * const poo
 
 /* Add item to array/object. */
 void mcJSON_AddItemToArray(mcJSON * const array, mcJSON * const item, mempool_t * const pool __attribute__((unused))) {
+	if (array == NULL) {
+		return;
+	}
+
 	mcJSON *child = array->child;
 
 	if (item == NULL) {
