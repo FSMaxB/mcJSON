@@ -1597,7 +1597,7 @@ mcJSON *mcJSON_CreateHexString(const buffer_t * const binary, mempool_t * const 
 	item->valuestring = parsebuffer_allocate(binary->content_length * 2 + 1, binary->content_length * 2 + 1, pool);
 
 	if (buffer_clone_as_hex(item->valuestring, binary) != 0) {
-		if (pool != NULL) {
+		if (pool == NULL) {
 			mcJSON_Delete(item);
 		}
 		return NULL;
