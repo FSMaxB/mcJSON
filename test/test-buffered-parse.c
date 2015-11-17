@@ -104,7 +104,7 @@ int main (int argc, char **argv) {
 
 		// cleanup
 		buffer_destroy_from_heap(print_buffer);
-		buffer_destroy_from_heap((buffer_t*)json_tree);
+		free(json_tree);
 	}
 
 	if (output_file != NULL) {
