@@ -65,16 +65,15 @@ typedef enum mcJSON_Type {
  * chunk of memory that is used for parsing a json into it. */
 typedef buffer_t mempool_t;
 
-
-#define mcJSON_IsReference 256
-#define mcJSON_StringIsConst 512
-
 /* The mcJSON structure: */
 typedef struct mcJSON {
 	struct mcJSON *next, *prev; /* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
 	struct mcJSON *child; /* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */
 
 	mcJSON_Type type; /* The type of the item, as above. */
+	/* bitfield with two boolean variables */
+	bool is_reference : 1;
+	bool string_is_const : 1;
 
 	buffer_t * valuestring; /* The item's string, if type==mcJSON_String */
 	int valueint; /* The item's number, if type==mcJSON_Number */

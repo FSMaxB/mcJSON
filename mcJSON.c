@@ -96,13 +96,13 @@ void mcJSON_Delete(mcJSON *item) {
 	mcJSON *next;
 	while (item != NULL) {
 		next = item->next;
-		if (!(item->type & mcJSON_IsReference) && (item->child != NULL)) {
+		if (!(item->is_reference) && (item->child != NULL)) {
 			mcJSON_Delete(item->child);
 		}
-		if (!(item->type & mcJSON_IsReference) && (item->valuestring != NULL) && (item->valuestring->content != NULL)) {
+		if (!(item->is_reference) && (item->valuestring != NULL) && (item->valuestring->content != NULL)) {
 			buffer_destroy_from_heap(item->valuestring);
 		}
-		if (!(item->type & mcJSON_StringIsConst) && (item->name != NULL) && (item->name->content != NULL)) {
+		if (!(item->string_is_const) && (item->name != NULL) && (item->name->content != NULL)) {
 			buffer_destroy_from_heap(item->name);
 		}
 		mcJSON_free(item);
@@ -1366,7 +1366,7 @@ static mcJSON *create_reference(const mcJSON * const item, mempool_t * const poo
 
 	memcpy(reference, item, sizeof(mcJSON));
 	reference->name = NULL;
-	reference->type |= mcJSON_IsReference;
+	reference->is_reference = true;
 	reference->next = reference->prev = NULL;
 
 	return reference;
@@ -1420,7 +1420,7 @@ void mcJSON_AddItemToObjectCS(mcJSON * const object, const buffer_t * const stri
 		return;
 	}
 
-	if (!(item->type & mcJSON_StringIsConst) && (item->name != NULL) && (item->name->content != NULL)) {
+	if (!(item->string_is_const) && (item->name != NULL) && (item->name->content != NULL)) {
 		if (pool != NULL) { /* can't destroy when using buffered parsing */
 			return;
 		}
@@ -1433,7 +1433,7 @@ void mcJSON_AddItemToObjectCS(mcJSON * const object, const buffer_t * const stri
 		//TODO proper error handling
 		return;
 	}
-	item->type |= mcJSON_StringIsConst;
+	item->string_is_const = true;
 	mcJSON_AddItemToArray(object, item, pool);
 }
 
@@ -1675,7 +1675,8 @@ mcJSON *mcJSON_Duplicate(const mcJSON * const item, const int recurse, mempool_t
 		return NULL;
 	}
 	/* Copy over all vars */
-	newitem->type = item->type & (~mcJSON_IsReference);
+	newitem->type = item->type;
+	newitem->is_reference = false;
 	newitem->valueint = item->valueint;
 	newitem->valuedouble = item->valuedouble;
 	if ((item->valuestring != NULL) && (item->valuestring->content != NULL)) {
