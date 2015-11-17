@@ -15,5 +15,6 @@ Features/Differences in comparison with cJSON:
 * Depends on [libsodium](https://github.com/jedisct1/libsodium) (may change in the future)
 * Doesn't contain stupid mistakes that even a compiler with proper flags can catch. (It still contains mistakes though, every piece of software does)
 * Buffered parsing (allocate one big continuous chunk of memory and parse the entire JSON tree into it)
+* Arrays and objects know their own length (getting the size has O(1) complexity )
 
 mcJSON ist licensed under LGPL2.1 or later.

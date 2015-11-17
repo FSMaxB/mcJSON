@@ -68,6 +68,7 @@ typedef buffer_t mempool_t;
 /* The mcJSON structure: */
 typedef struct mcJSON {
 	struct mcJSON *next, *prev; /* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
+	size_t length; /* the length of an array or an object */
 	struct mcJSON *child; /* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */
 
 	mcJSON_Type type; /* The type of the item, as above. */

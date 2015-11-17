@@ -810,6 +810,7 @@ static buffer_t *parse_array(mcJSON * const item, buffer_t * const input, mempoo
 	}
 
 	mcJSON *child = mcJSON_New_Item(pool);
+	item->length++;
 	item->child = child;
 	if (item->child == NULL) { /* memory fail */
 		return NULL;
@@ -820,6 +821,7 @@ static buffer_t *parse_array(mcJSON * const item, buffer_t * const input, mempoo
 
 	while ((input->position < input->content_length) && (input->content[input->position] == ',')) {
 		mcJSON *new_item = mcJSON_New_Item(pool);
+		item->length++;
 		if (new_item == NULL) { /* memory fail */
 			return NULL;
 		}
@@ -1023,6 +1025,7 @@ static buffer_t *parse_object(mcJSON * const item, buffer_t * const input, mempo
 	}
 
 	mcJSON *child = mcJSON_New_Item(pool);
+	item->length++;
 	item->child = child;
 	if (item->child == NULL) {
 		return NULL;
@@ -1044,6 +1047,7 @@ static buffer_t *parse_object(mcJSON * const item, buffer_t * const input, mempo
 
 	while ((input->position < input->buffer_length) && (input->content[input->position] == ',')) {
 		mcJSON *new_item = mcJSON_New_Item(pool);
+		item->length++;
 		if (new_item == NULL) { /* memory fail */
 			return NULL;
 		}
@@ -1412,6 +1416,7 @@ void mcJSON_AddItemToArray(mcJSON * const array, mcJSON * const item, mempool_t 
 		}
 		insert_into_object(child, item);
 	}
+	array->length++;
 }
 
 void mcJSON_AddItemToObject(mcJSON * const object, const buffer_t * const string, mcJSON * const item, mempool_t * const pool) {
@@ -1478,6 +1483,7 @@ mcJSON *detach_item(mcJSON * const parent, mcJSON * const child) {
 
 	child->next = NULL;
 	child->prev = NULL;
+	parent->length--;
 
 	return child;
 }
@@ -1512,6 +1518,7 @@ void insert_item(mcJSON * const parent, mcJSON * const previous, mcJSON * const 
 	} else {
 		new_item->prev->next = new_item;
 	}
+	parent->length++;
 }
 
 void   mcJSON_InsertItemInArray(mcJSON * const array, const size_t index, mcJSON * const new_item, mempool_t * const pool) {
@@ -1691,6 +1698,8 @@ mcJSON *mcJSON_Duplicate(const mcJSON * const item, const int recurse, mempool_t
 	/* Copy over all vars */
 	newitem->type = item->type;
 	newitem->is_reference = false;
+	newitem->string_is_const = item->string_is_const;
+	newitem->length = item->length;
 	newitem->valueint = item->valueint;
 	newitem->valuedouble = item->valuedouble;
 	if ((item->valuestring != NULL) && (item->valuestring->content != NULL)) {
