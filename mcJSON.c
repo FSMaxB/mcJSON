@@ -850,11 +850,8 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 
 	buffer_t *output = NULL;
 
-	/* How many entries in the array? */
-	size_t numentries = mcJSON_GetArraySize(item);
-
-	/* Explicitly handle numentries == 0 */
-	if (numentries == 0) { /* empty array */
+	/* Explicitly handle item->length == 0 */
+	if (item->length == 0) { /* empty array */
 		output = printbuffer_allocate(3, buffer);
 		if (output == NULL) {
 			return NULL;
@@ -926,17 +923,17 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 
 	/* unbuffered */
 	/* Allocate an array to hold the values for each */
-	buffer_t **entries = (buffer_t**)allocate(numentries * sizeof(buffer_t*), NULL);
+	buffer_t **entries = (buffer_t**)allocate(item->length * sizeof(buffer_t*), NULL);
 	if (entries == NULL) {
 		return NULL;
 	}
-	memset(entries, 0, numentries * sizeof(buffer_t*)); /* initialize as NULL pointers */
+	memset(entries, 0, item->length * sizeof(buffer_t*)); /* initialize as NULL pointers */
 
 	/* Retrieve all the results: */
 	mcJSON *child = item->child;
 	size_t length = 0;
 	bool fail = false;
-	for (size_t i = 0; (i < numentries) && (child != NULL) && !fail; child = child->next, i++) {
+	for (size_t i = 0; (i < item->length) && (child != NULL) && !fail; child = child->next, i++) {
 		entries[i] = print_value(child, depth + 1, format, NULL);
 		if (entries[i] == NULL) {
 			fail = true;
@@ -960,7 +957,7 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 		output->content[output->position] = '[';
 		output->position++;
 		output->content[output->position] = '\0';
-		for (size_t i = 0; i < numentries; i++) {
+		for (size_t i = 0; i < item->length; i++) {
 			if (buffer_copy(output, output->position, entries[i], 0, entries[i]->content_length - 1) != 0) {
 				if (output->content != NULL) {
 					output->content[output->position] = '\0';
@@ -969,7 +966,7 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 				break;
 			}
 			output->position += entries[i]->content_length - 1;
-			if (i != (numentries - 1)) {
+			if (i != (item->length- 1)) {
 				output->content[output->position] = ',';
 				output->position++;
 				if (format) {
@@ -985,7 +982,7 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 
 	/* Handle failure. */
 	if (fail) {
-		for (size_t i = 0; i < numentries; i++) {
+		for (size_t i = 0; i < item->length; i++) {
 			if (entries[i] != NULL) {
 				buffer_destroy_from_heap(entries[i]);
 			}
@@ -1086,11 +1083,8 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 	buffer_t *output = NULL;
 	bool fail = false;
 
-	/* Count the number of entries. */
-	size_t numentries = mcJSON_GetArraySize(item);
-
 	/* Explicitly handle empty object case */
-	if (numentries == 0) {
+	if (item->length == 0) {
 		/* '{' + '}' + '\0' + format: '\n' + depth */
 		size_t length = format ? depth + 4 : 3;
 		output = printbuffer_allocate(length, buffer);
@@ -1209,18 +1203,18 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 	/* unbuffered */
 	/* Allocate space for the names and the objects */
 	buffer_t **entries = NULL;
-	entries = (buffer_t**)allocate(numentries * sizeof(buffer_t*), NULL);
+	entries = (buffer_t**)allocate(item->length * sizeof(buffer_t*), NULL);
 	if (entries == NULL) {
 		return NULL;
 	}
 	buffer_t **names = NULL;
-	names = (buffer_t**)allocate(numentries * sizeof(buffer_t*), NULL);
+	names = (buffer_t**)allocate(item->length * sizeof(buffer_t*), NULL);
 	if (names == NULL) {
 		mcJSON_free(entries);
 		return NULL;
 	}
-	memset(entries, 0, sizeof(buffer_t*) * numentries);
-	memset(names, 0, sizeof(buffer_t*) * numentries);
+	memset(entries, 0, sizeof(buffer_t*) * item->length);
+	memset(names, 0, sizeof(buffer_t*) * item->length);
 
 	/* Collect all the results into our arrays: */
 	mcJSON *child = item->child;
@@ -1231,7 +1225,7 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 		/* indentation for closing '}' + '\n' */
 		length += (depth - 1) + 1;
 	}
-	for (size_t i = 0; (i < numentries) && (child != NULL) && !fail; child = child->next, i++) {
+	for (size_t i = 0; (i < item->length) && (child != NULL) && !fail; child = child->next, i++) {
 		names[i] = print_string_ptr(child->name, NULL);
 		if (names[i] == NULL) {
 			fail = true;
@@ -1265,7 +1259,7 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 			output->position++;
 		}
 		output->content[output->position] = '\0';
-		for (size_t i = 0; i < numentries; i++) {
+		for (size_t i = 0; i < item->length; i++) {
 			if (format) { /* indentation */
 				for (size_t j = 0; j < depth; j++) {
 					output->content[output->position + j] = '\t';
@@ -1296,7 +1290,7 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 			}
 			output->position += entries[i]->content_length - 1;
 
-			if (i != (numentries - 1)) {
+			if (i != (item->length - 1)) {
 				output->content[output->position] = ',';
 				output->position++;
 			}
@@ -1316,7 +1310,7 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 
 	/* Handle failure */
 	if (fail) {
-		for (size_t i = 0; i < numentries; i++) {
+		for (size_t i = 0; i < item->length; i++) {
 			if (names[i] != NULL) {
 				buffer_destroy_from_heap(names[i]);
 			}
@@ -1347,14 +1341,6 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 	output->content_length = output->position + 1;
 
 	return output;
-}
-
-/* Get Array size/item / object item. */
-size_t mcJSON_GetArraySize(const mcJSON * const array) {
-	mcJSON *child = array->child;
-	size_t size;
-	for (size = 0; child != NULL; child = child->next, size++) {}
-	return size;
 }
 
 mcJSON *mcJSON_GetArrayItem(const mcJSON * const array, size_t index) {

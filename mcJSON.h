@@ -67,7 +67,7 @@ typedef buffer_t mempool_t;
 
 /* The mcJSON structure: */
 typedef struct mcJSON {
-	struct mcJSON *next, *prev; /* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
+	struct mcJSON *next, *prev; /* next/prev allow you to walk array/object chains. Alternatively, use GetArrayItem/GetObjectItem */
 	size_t length; /* the length of an array or an object */
 	struct mcJSON *child; /* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */
 
@@ -110,8 +110,6 @@ extern buffer_t *mcJSON_PrintBuffered(mcJSON * const item, const size_t prebuffe
 /* Delete a mcJSON entity and all subentities. */
 extern void mcJSON_Delete(mcJSON * const c);
 
-/* Returns the number of items in an array (or object). */
-extern size_t mcJSON_GetArraySize(const mcJSON * const array);
 /* Retrieve item number "item" from array "array". Returns NULL if unsuccessful. */
 extern mcJSON *mcJSON_GetArrayItem(const mcJSON *const array, size_t index);
 /* Get item "string" from object. */
