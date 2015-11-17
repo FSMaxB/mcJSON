@@ -70,6 +70,14 @@ void *allocate(const size_t size, mempool_t * const pool) {
 	return pointer;
 }
 
+void deallocate(void *pointer, mempool_t * const pool) {
+	if (pool == NULL) { /* no mempool is used, do normal free */
+		mcJSON_free(pointer);
+	}
+
+	/* in case of mempool, do nothing, because it doesn't support deallocating */
+}
+
 void mcJSON_InitHooks(const mcJSON_Hooks * const hooks) {
 	if (hooks == NULL) { /* Reset hooks */
 		mcJSON_malloc = malloc;
@@ -190,6 +198,18 @@ buffer_t *parsebuffer_allocate(const size_t buffer_length, const size_t content_
 	}
 
 	return buffer_init_with_pointer(buffer, content, buffer_length, content_length);
+}
+
+/* deallocate a molch_buffer that was used for parsing */
+void parsebuffer_deallocate(buffer_t *buffer, mempool_t * const pool) {
+	if (pool == NULL) { /* no mempool is used, do normal buffer_destroy_from_heap */
+		buffer_destroy_from_heap(buffer);
+		return;
+	}
+
+	/* deallocating from mempool_t isn't possible */
+	buffer_clear(buffer);
+	return;
 }
 
 
@@ -323,7 +343,7 @@ static buffer_t *parse_string(mcJSON * const item, buffer_t * const input, mempo
 				case 'u': {/* transcode utf16 to utf8. */
 						/* FIXME: I don't quite understand this code yet, therefore I can't refactor it */
 						if ((input->position + 4) >= input->content_length) {
-							buffer_destroy_from_heap(value_out);
+							parsebuffer_deallocate(value_out, pool);
 							return NULL;
 						}
 						unsigned uc;
@@ -341,7 +361,7 @@ static buffer_t *parse_string(mcJSON * const item, buffer_t * const input, mempo
 								break;
 							}
 							if ((input->position + 6) >= input->content_length) {
-								buffer_destroy_from_heap(value_out);
+								parsebuffer_deallocate(value_out, pool);
 								return NULL;
 							}
 							uc2 = parse_hex4(input);
@@ -1400,10 +1420,7 @@ void mcJSON_AddItemToObject(mcJSON * const object, const buffer_t * const string
 	}
 
 	if ((item->name != NULL) && (item->name->content != NULL)) {
-		if (pool != NULL) { /* can't destroy when using buffered parsing */
-			return;
-		}
-		buffer_destroy_from_heap(item->name);
+		parsebuffer_deallocate(item->name, pool);
 	}
 
 	item->name = parsebuffer_allocate(string->content_length, string->content_length, pool);
@@ -1421,10 +1438,7 @@ void mcJSON_AddItemToObjectCS(mcJSON * const object, const buffer_t * const stri
 	}
 
 	if (!(item->string_is_const) && (item->name != NULL) && (item->name->content != NULL)) {
-		if (pool != NULL) { /* can't destroy when using buffered parsing */
-			return;
-		}
-		buffer_destroy_from_heap(item->name);
+		parsebuffer_deallocate(item->name, pool);
 	}
 
 	item->name = parsebuffer_allocate(string->content_length, string->content_length, pool);
