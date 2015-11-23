@@ -220,8 +220,7 @@ extern bool mcJSON_IsInteger(const mcJSON * const number) {
 /* Render the number nicely from the given item into a string. */
 static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
 	buffer_t *output = NULL;
-	double d = item->valuedouble;
-	if (d == 0) { /* zero */
+	if (item->valuedouble == 0) { /* zero */
 		output = printbuffer_allocate(2, buffer);
 		if (output == NULL) {
 			return NULL;
@@ -251,7 +250,7 @@ static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
 		if (output == NULL) {
 			return NULL;
 		}
-		if ((fpclassify(d) != FP_ZERO) && (!isnormal(d))) {
+		if ((fpclassify(item->valuedouble) != FP_ZERO) && (!isnormal(item->valuedouble))) {
 			output->content_length = output->position + 1;
 			if (buffer_copy_from_raw(output, output->position, (unsigned char*)"null", 0, 5) != 0) {
 				if (output->content != NULL) {
@@ -263,12 +262,12 @@ static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
 				return NULL;
 			}
 			output->position += 4;
-		} else if ((fabs(floor(d) - d) <= DBL_EPSILON) && (fabs(d) < 1.0e60)) {
-			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%.0f", d);
-		} else if ((fabs(d) < 1.0e-6) || (fabs(d) > 1.0e9)) {
-			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%e", d);
+		} else if ((fabs(floor(item->valuedouble) - item->valuedouble) <= DBL_EPSILON) && (fabs(item->valuedouble) < 1.0e60)) {
+			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%.0f", item->valuedouble);
+		} else if ((fabs(item->valuedouble) < 1.0e-6) || (fabs(item->valuedouble) > 1.0e9)) {
+			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%e", item->valuedouble);
 		} else {
-			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%f", d);
+			output->position += snprintf((char*)output->content + output->position, output->buffer_length - output->position, "%f", item->valuedouble);
 		}
 	}
 
