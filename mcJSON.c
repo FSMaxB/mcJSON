@@ -212,6 +212,10 @@ void parsebuffer_deallocate(buffer_t *buffer, mempool_t * const pool) {
 	return;
 }
 
+/* check if a given Number is an Integer */
+extern bool mcJSON_IsInteger(const mcJSON * const number) {
+	return (number != NULL) && (number->type == mcJSON_Number) && (fabs(((double)number->valueint) - number->valuedouble) <= DBL_EPSILON) && (number->valuedouble <= INT_MAX) && (number->valuedouble >= INT_MIN);
+}
 
 /* Render the number nicely from the given item into a string. */
 static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
@@ -232,7 +236,7 @@ static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
 			return NULL;
 		}
 		output->position++;
-	} else if ((fabs(((double)item->valueint) - d) <= DBL_EPSILON) && (d <= INT_MAX) && (d >= INT_MIN)) {
+	} else if (mcJSON_IsInteger(item)) {
 		/* number is an integer */
 		static const size_t INT_STRING_SIZE = 21; /* 2^64+1 can be represented in 21 chars. */
 		output = printbuffer_allocate(INT_STRING_SIZE, buffer);

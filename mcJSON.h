@@ -114,6 +114,8 @@ extern void mcJSON_Delete(mcJSON * const c);
 extern mcJSON *mcJSON_GetArrayItem(const mcJSON *const array, size_t index);
 /* Get item "string" from object. */
 extern mcJSON *mcJSON_GetObjectItem(const mcJSON * const object, const buffer_t * const string);
+/* check if a given Number is an Integer */
+extern bool mcJSON_IsInteger(const mcJSON * const number);
 
 /* These calls create a mcJSON item of the appropriate type. */
 extern mcJSON *mcJSON_CreateNull(mempool_t *pool);
