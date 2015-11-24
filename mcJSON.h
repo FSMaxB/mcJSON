@@ -116,6 +116,8 @@ extern mcJSON *mcJSON_GetArrayItem(const mcJSON *const array, size_t index);
 extern mcJSON *mcJSON_GetObjectItem(const mcJSON * const object, const buffer_t * const string);
 /* check if a given Number is an Integer */
 extern bool mcJSON_IsInteger(const mcJSON * const number);
+/* check if a given json object is a boolean */
+extern bool mcJSON_IsBoolean(const mcJSON * const json);
 
 /* These calls create a mcJSON item of the appropriate type. */
 extern mcJSON *mcJSON_CreateNull(mempool_t *pool);

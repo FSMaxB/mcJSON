@@ -217,6 +217,11 @@ extern bool mcJSON_IsInteger(const mcJSON * const number) {
 	return (number != NULL) && (number->type == mcJSON_Number) && (fabs(((double)number->valueint) - number->valuedouble) <= DBL_EPSILON) && (number->valuedouble <= INT_MAX) && (number->valuedouble >= INT_MIN);
 }
 
+/* check if a given json object is a boolean */
+bool mcJSON_IsBoolean(const mcJSON * const json) {
+	return (json != NULL) && ((json->type == mcJSON_True) || (json->type == mcJSON_False));
+}
+
 /* Render the number nicely from the given item into a string. */
 static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
 	buffer_t *output = NULL;
