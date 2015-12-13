@@ -960,7 +960,7 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 
 	/* If we didn't fail, try to alloc the output string */
 	if (!fail) {
-		output = buffer_create_on_heap(length, length);
+		output = printbuffer_allocate(length, NULL);
 	}
 	/* If that fails, we fail. */
 	if ((output == NULL) || (output->content == NULL)) {
