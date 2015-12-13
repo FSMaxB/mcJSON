@@ -662,10 +662,17 @@ buffer_t *mcJSON_PrintUnformatted(mcJSON * const item) {
 }
 
 buffer_t *mcJSON_PrintBuffered(mcJSON * const item, const size_t prebuffer, const bool format) {
-	buffer_t *buffer = buffer_create_on_heap(prebuffer, prebuffer);
-	if (buffer == NULL) {
+	//allocate prebuffer
+	unsigned char *buffer_content = mcJSON_malloc(prebuffer);
+	if (buffer_content == NULL) {
 		return NULL;
 	}
+	buffer_t *buffer = mcJSON_malloc(sizeof(buffer_t));
+	if (buffer == NULL) {
+		mcJSON_free(buffer_content);
+		return NULL;
+	}
+	buffer_init_with_pointer(buffer, buffer_content, prebuffer, prebuffer);
 	if (print_value(item, 0, format, buffer) == NULL) {
 		buffer_destroy_from_heap(buffer);
 		return NULL;
