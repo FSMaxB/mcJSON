@@ -108,10 +108,10 @@ void mcJSON_Delete(mcJSON *item) {
 			mcJSON_Delete(item->child);
 		}
 		if (!(item->is_reference) && (item->valuestring != NULL) && (item->valuestring->content != NULL)) {
-			buffer_destroy_from_heap(item->valuestring);
+			buffer_destroy_with_custom_deallocator(item->valuestring, mcJSON_free);
 		}
 		if (!(item->string_is_const) && (item->name != NULL) && (item->name->content != NULL)) {
-			buffer_destroy_from_heap(item->name);
+			buffer_destroy_with_custom_deallocator(item->name, mcJSON_free);
 		}
 		mcJSON_free(item);
 		item = next;
@@ -174,13 +174,13 @@ buffer_t *printbuffer_allocate(const size_t size, buffer_t * const buffer) {
 	}
 
 	/* allocate new memory (unbuffered printing) */
-	return buffer_create_on_heap(size, size);
+	return buffer_create_with_custom_allocator(size, size, mcJSON_malloc, mcJSON_free);
 }
 
 /* allocate a molch_buffer for parsing, inside a mempool_t if it exists */
 buffer_t *parsebuffer_allocate(const size_t buffer_length, const size_t content_length, mempool_t * const pool) {
 	if (pool == NULL) { /* unbuffered parsing */
-		return buffer_create_on_heap(buffer_length, content_length);
+		return buffer_create_with_custom_allocator(buffer_length, content_length, mcJSON_malloc, mcJSON_free);
 	}
 
 	/* buffered parsing */
@@ -202,8 +202,8 @@ buffer_t *parsebuffer_allocate(const size_t buffer_length, const size_t content_
 
 /* deallocate a molch_buffer that was used for parsing */
 void parsebuffer_deallocate(buffer_t *buffer, mempool_t * const pool) {
-	if (pool == NULL) { /* no mempool is used, do normal buffer_destroy_from_heap */
-		buffer_destroy_from_heap(buffer);
+	if (pool == NULL) { /* no mempool is used, do normal buffer_destroy_with_custom_deallocator*/
+		buffer_destroy_with_custom_deallocator(buffer, mcJSON_free);
 		return;
 	}
 
@@ -235,7 +235,7 @@ static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
 		if (buffer_copy_from_raw(output, output->position, (unsigned char*)"0", 0, 2) != 0) {
 			output->content[output->position] = '\0';
 			if (buffer == NULL) {
-				buffer_destroy_from_heap(output);
+				buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 			}
 			return NULL;
 		}
@@ -262,7 +262,7 @@ static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
 					output->content[output->position] = '\0';
 				}
 				if (buffer == NULL) {
-					buffer_destroy_from_heap(output);
+					buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 				}
 				return NULL;
 			}
@@ -439,7 +439,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 			return NULL;
 		}
 		if (output->content == NULL) {
-			buffer_destroy_from_heap(output);
+			buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 			return NULL;
 		}
 
@@ -448,7 +448,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 		if (buffer_copy_from_raw(output, output->position, (unsigned char*)"\"\"", 0, 3) != 0) {
 			output->content[output->position] = '\0';
 			if (buffer == NULL) {
-				buffer_destroy_from_heap(output);
+				buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 			}
 			return NULL;
 		}
@@ -477,7 +477,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 		return NULL;
 	}
 	if (output->content == NULL) {
-		buffer_destroy_from_heap(output);
+		buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 		return NULL;
 	}
 
@@ -492,7 +492,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 		if ((buffer_copy(output, output->position, string, 0, string->content_length)) != 0) {
 			output->content[output->position] = '\0';
 			if (buffer == NULL) {
-				buffer_destroy_from_heap(output);
+				buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 			}
 			return NULL;
 		}
@@ -525,7 +525,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 			if ((output->position + 1) > output->buffer_length) {
 				output->content[output->position] = '\0';
 				if (buffer == NULL) {
-					buffer_destroy_from_heap(output);
+					buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 				}
 				return NULL;
 			}
@@ -556,7 +556,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 					if ((output->position + 6) > output->buffer_length) {
 						output->content[output->position] = '\0';
 						if (buffer == NULL) {
-							buffer_destroy_from_heap(output);
+							buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 						}
 						return NULL;
 					}
@@ -571,7 +571,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 	if ((output->position + 2) > output->buffer_length) {
 		output->content[output->position] = '\0';
 		if (buffer == NULL) {
-			buffer_destroy_from_heap(output);
+			buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 		}
 		return NULL;
 	}
@@ -626,7 +626,7 @@ mcJSON *mcJSON_ParseWithBuffer(buffer_t * const json, mempool_t * const pool){
 		if (pool == NULL) {
 			mcJSON_Delete(root);
 		} else {
-			buffer_destroy_from_heap(pool);
+			buffer_destroy_with_custom_deallocator(pool, mcJSON_free);
 		}
 		return NULL;
 	}
@@ -635,7 +635,7 @@ mcJSON *mcJSON_ParseWithBuffer(buffer_t * const json, mempool_t * const pool){
 }
 
 mcJSON *mcJSON_ParseBuffered(buffer_t * const input_string, const size_t buffer_size) {
-	mempool_t *pool = buffer_create_on_heap(buffer_size, buffer_size);
+	mempool_t *pool = buffer_create_with_custom_allocator(buffer_size, buffer_size, mcJSON_malloc, mcJSON_free);
 	if (pool == NULL) {
 		return NULL;
 	}
@@ -674,7 +674,7 @@ buffer_t *mcJSON_PrintBuffered(mcJSON * const item, const size_t prebuffer, cons
 	}
 	buffer_init_with_pointer(buffer, buffer_content, prebuffer, prebuffer);
 	if (print_value(item, 0, format, buffer) == NULL) {
-		buffer_destroy_from_heap(buffer);
+		buffer_destroy_with_custom_deallocator(buffer, mcJSON_free);
 		return NULL;
 	}
 	return buffer;
@@ -879,7 +879,7 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 				output->content[output->position] = '\0';
 			}
 			if (buffer == NULL) {
-				buffer_destroy_from_heap(output);
+				buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 			}
 			return NULL;
 		}
@@ -990,7 +990,7 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 				}
 				output->content[output->position] = '\0';
 			}
-			buffer_destroy_from_heap(entries[i]);
+			buffer_destroy_with_custom_deallocator(entries[i], mcJSON_free);
 			entries[i] = NULL;
 		}
 	}
@@ -999,12 +999,12 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 	if (fail) {
 		for (size_t i = 0; i < item->length; i++) {
 			if (entries[i] != NULL) {
-				buffer_destroy_from_heap(entries[i]);
+				buffer_destroy_with_custom_deallocator(entries[i], mcJSON_free);
 			}
 		}
 		mcJSON_free(entries);
 		if (output != NULL) {
-			buffer_destroy_from_heap(output);
+			buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 		}
 		return NULL;
 	}
@@ -1107,7 +1107,7 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 			return NULL;
 		}
 		if (output->content == NULL) {
-			buffer_destroy_from_heap(output);
+			buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 			return NULL;
 		}
 
@@ -1259,7 +1259,7 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 
 	/* Try to allocate the output string */
 	if (!fail) {
-		output = buffer_create_on_heap(length, length);
+		output = buffer_create_with_custom_allocator(length, length, mcJSON_malloc, mcJSON_free);
 	}
 	if ((output == NULL) || (output->content == NULL)) {
 		fail = true;
@@ -1316,9 +1316,9 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 			}
 			output->content[output->position] = '\0';
 
-			buffer_destroy_from_heap(names[i]);
+			buffer_destroy_with_custom_deallocator(names[i], mcJSON_free);
 			names[i] = NULL;
-			buffer_destroy_from_heap(entries[i]);
+			buffer_destroy_with_custom_deallocator(entries[i], mcJSON_free);
 			entries[i] = NULL;
 		}
 	}
@@ -1327,16 +1327,16 @@ static buffer_t *print_object(mcJSON * const item, size_t depth, const bool form
 	if (fail) {
 		for (size_t i = 0; i < item->length; i++) {
 			if (names[i] != NULL) {
-				buffer_destroy_from_heap(names[i]);
+				buffer_destroy_with_custom_deallocator(names[i], mcJSON_free);
 			}
 			if (entries[i] != NULL) {
-				buffer_destroy_from_heap(entries[i]);
+				buffer_destroy_with_custom_deallocator(entries[i], mcJSON_free);
 			}
 		}
 		mcJSON_free(names);
 		mcJSON_free(entries);
 		if (output != NULL) {
-			buffer_destroy_from_heap(output);
+			buffer_destroy_with_custom_deallocator(output, mcJSON_free);
 		}
 		return NULL;
 	}
