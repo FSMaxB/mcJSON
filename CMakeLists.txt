@@ -14,11 +14,11 @@ target_link_libraries(mcjson-utils mcjson)
 
 #check if running debug build
 if ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
-    if(NOT APPLE)
-        set(SECURITY_C_FLAGS "-Og")
-    else(NOT APPLE)
+    if("${CMAKE_C_COMPILER}" MATCHES "clang")
         set(SECURITY_C_FLAGS "-O0")
-    endif(NOT APPLE)
+    else()
+        set(SECURITY_C_FLAGS "-Og")
+    endif()
 else ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
     #more secure linker and compiler flags
     if(APPLE)
