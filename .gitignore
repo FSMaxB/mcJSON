@@ -3,3 +3,4 @@
 build/
 address-sanitizer
 static-analysis
+undefined-behavior-sanitizer
