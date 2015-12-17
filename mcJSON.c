@@ -79,7 +79,7 @@ size_t lcm(size_t a, size_t b) {
 		return 0;
 	}
 
-	return abs(a * b) / gcd(a, b);
+	return (a * b) / gcd(a, b);
 }
 
 #define ALIGNMENT_OF(type) offsetof( struct { char c; type t; }, t )
