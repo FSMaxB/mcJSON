@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "common.h"
 #include "../mcJSON.h"
@@ -251,7 +252,7 @@ int create_objects(FILE *output_file) {
 
 	root = mcJSON_CreateObject(NULL);
 	name_literal_buffer = buffer_create_from_string("number");
-	mcJSON_AddNumberToObject(root, name_literal_buffer, 1.0/0.0, NULL);
+	mcJSON_AddNumberToObject(root, name_literal_buffer, INFINITY, NULL);
 
 	output = mcJSON_Print(root);
 	mcJSON_Delete(root);

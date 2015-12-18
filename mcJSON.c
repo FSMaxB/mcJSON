@@ -1663,7 +1663,11 @@ mcJSON *mcJSON_CreateNumber(const double num, mempool_t * const pool) {
 	if (item) {
 		item->type = mcJSON_Number;
 		item->valuedouble = num;
-		item->valueint = (int)num;
+		if (isfinite(num) && !isnan(num) && (num <= INT_MAX) && (num >= INT_MIN)) {
+			item->valueint = (int)num;
+		} else {
+			item->valueint = 0;
+		}
 	}
 	return item;
 }
