@@ -96,7 +96,7 @@ int dofile(char *input_filename, char *output_filename) {
 
 
 	//now do the tests
-	buffer_t *data_buffer = buffer_create_with_existing_array((unsigned char*)data, length);
+	buffer_create_with_existing_array(data_buffer, (unsigned char*)data, length);
 	status = doit(data_buffer, output_file);
 	if (output_file != NULL) {
 		fclose(output_file);

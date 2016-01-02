@@ -207,7 +207,7 @@ static mcJSON *mcJSONUtils_PatchDetach(mcJSON *object, const char *path) {
 	} else if (parent->type == mcJSON_Array) {
 		ret = mcJSON_DetachItemFromArray(parent, atoi(childptr));
 	} else if (parent->type == mcJSON_Object) {
-		buffer_t *childptr_buffer = buffer_create_with_existing_array((unsigned char*)childptr, strlen(childptr) + 1);
+		buffer_create_with_existing_array(childptr_buffer, (unsigned char*)childptr, strlen(childptr) + 1);
 		ret = mcJSON_DetachItemFromObject(parent, childptr_buffer);
 	}
 	buffer_destroy_from_heap(parentptr);
@@ -361,7 +361,7 @@ static int mcJSONUtils_ApplyPatch(mcJSON *object, mcJSON *patch) {
 			mcJSON_InsertItemInArray(parent, atoi(childptr), value, NULL);
 		}
 	} else if (parent->type == mcJSON_Object) {
-		buffer_t *childptr_buffer = buffer_create_with_existing_array((unsigned char*)childptr, strlen(childptr) + 1);
+		buffer_create_with_existing_array(childptr_buffer, (unsigned char*)childptr, strlen(childptr) + 1);
 		mcJSON_DeleteItemFromObject(parent, childptr_buffer);
 		mcJSON_AddItemToObject(parent, childptr_buffer, value, NULL);
 	} else {
@@ -392,7 +392,7 @@ int mcJSONUtils_ApplyPatches(mcJSON *object, mcJSON *patches) {
 static void mcJSONUtils_GeneratePatch(mcJSON *patches, const char *op, const char *path, const char *suffix, mcJSON *val) {
 	mcJSON *patch = mcJSON_CreateObject(NULL);
 	buffer_t *op_literal_buffer = buffer_create_from_string("op");
-	buffer_t *op_buffer = buffer_create_with_existing_array((unsigned char*)op, strlen(op) + 1);
+	buffer_create_with_existing_array(op_buffer, (unsigned char*)op, strlen(op) + 1);
 	mcJSON_AddItemToObject(patch, op_literal_buffer, mcJSON_CreateString(op_buffer, NULL), NULL);
 	if (suffix) {
 		size_t length = strlen(path) + mcJSONUtils_PointerEncodedstrlen(suffix) + 2;
@@ -402,7 +402,7 @@ static void mcJSONUtils_GeneratePatch(mcJSON *patches, const char *op, const cha
 		mcJSON_AddItemToObject(patch, path_buffer, mcJSON_CreateString(newpath, NULL), NULL);
 		buffer_destroy_from_heap(newpath);
 	} else {
-		buffer_t *path_buffer = buffer_create_with_existing_array((unsigned char*)path, strlen(path) + 1);
+		buffer_create_with_existing_array(path_buffer, (unsigned char*)path, strlen(path) + 1);
 		buffer_t *path_literal_buffer = buffer_create_from_string("path");
 		mcJSON_AddItemToObject(patch, path_literal_buffer, mcJSON_CreateString(path_buffer, NULL), NULL);
 	}

@@ -344,7 +344,7 @@ int main (int argc, char **argv) {
 
 	/* Process each json textblock by parsing, then rebuilding: */
 	for (size_t i = 0; i < (sizeof(json) / sizeof(char*)); i++) {
-		buffer_t *json_buffer = buffer_create_with_existing_array((unsigned char*)json[i], strlen(json[i]) + 1);
+		buffer_create_with_existing_array(json_buffer, (unsigned char*)json[i], strlen(json[i]) + 1);
 		int status = doit(json_buffer, output_file);
 		if (status == 0) {
 			fprintf(stderr, "ERROR: Failed on text %zu!\n", i);
