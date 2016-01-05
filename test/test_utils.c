@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 	int i;
 	/* JSON Pointer tests: */
 	mcJSON *root;
-	buffer_t *json = buffer_create_from_string("{"
+	buffer_create_from_string(json, "{"
 		"\"foo\": [\"bar\", \"baz\"],"
 		"\"\": 0,"
 		"\"a/b\": 1,"
@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
 	object = mcJSON_CreateObject(NULL);
 	nums = mcJSON_CreateIntArray(numbers, 10, NULL);
 	num6 = mcJSON_GetArrayItem(nums, 6);
-	buffer_t *name_literal_buffer = buffer_create_from_string("numbers");
+	buffer_create_from_string(name_literal_buffer, "numbers");
 	mcJSON_AddItemToObject(object, name_literal_buffer, nums, NULL);
 	char *temp = mcJSONUtils_FindPointerFromObjectTo(object, num6);
 	if (temp == NULL) {
