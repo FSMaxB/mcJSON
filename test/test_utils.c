@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 	int i;
 	/* JSON Pointer tests: */
 	mcJSON *root;
-	buffer_t *json = buffer_create_from_string("{"
+	buffer_create_from_string(json, "{"
 		"\"foo\": [\"bar\", \"baz\"],"
 		"\"\": 0,"
 		"\"a/b\": 1,"
@@ -136,9 +136,9 @@ int main(int argc, char **argv) {
 		fprintf(output_file, "JSON Apply Patch Tests\n");
 	}
 	for (i = 0; i < 15; i++) {
-		buffer_t *object_buffer = buffer_create_with_existing_array((unsigned char*)patches[i][0], strlen(patches[i][0]) + 1);
+		buffer_create_with_existing_array(object_buffer, (unsigned char*)patches[i][0], strlen(patches[i][0]) + 1);
 		mcJSON *object = mcJSON_Parse(object_buffer);
-		buffer_t *patch_buffer = buffer_create_with_existing_array((unsigned char*)patches[i][1], strlen(patches[i][1]) + 1);
+		buffer_create_with_existing_array(patch_buffer, (unsigned char*)patches[i][1], strlen(patches[i][1]) + 1);
 		mcJSON *patch = mcJSON_Parse(patch_buffer);
 		int err = mcJSONUtils_ApplyPatches(object, patch);
 		buffer_t *output = mcJSON_Print(object);
@@ -172,9 +172,9 @@ int main(int argc, char **argv) {
 		if (!strlen(patches[i][2])) {
 			continue;
 		}
-		buffer_t *from_buffer = buffer_create_with_existing_array((unsigned char*)patches[i][0], strlen(patches[i][0]) + 1);
+		buffer_create_with_existing_array(from_buffer, (unsigned char*)patches[i][0], strlen(patches[i][0]) + 1);
 		from = mcJSON_Parse(from_buffer);
-		buffer_t *to_buffer = buffer_create_with_existing_array((unsigned char*)patches[i][2], strlen(patches[i][2]) + 1);
+		buffer_create_with_existing_array(to_buffer, (unsigned char*)patches[i][2], strlen(patches[i][2]) + 1);
 		to = mcJSON_Parse(to_buffer);
 		patch = mcJSONUtils_GeneratePatches(from, to);
 		buffer_t *output = mcJSON_Print(patch);
@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
 	object = mcJSON_CreateObject(NULL);
 	nums = mcJSON_CreateIntArray(numbers, 10, NULL);
 	num6 = mcJSON_GetArrayItem(nums, 6);
-	buffer_t *name_literal_buffer = buffer_create_from_string("numbers");
+	buffer_create_from_string(name_literal_buffer, "numbers");
 	mcJSON_AddItemToObject(object, name_literal_buffer, nums, NULL);
 	char *temp = mcJSONUtils_FindPointerFromObjectTo(object, num6);
 	if (temp == NULL) {
@@ -265,7 +265,7 @@ int main(int argc, char **argv) {
 
 	/* JSON Sort test: */
 	sortme = mcJSON_CreateObject(NULL);
-	buffer_t *buf_buffer = buffer_create_with_existing_array((unsigned char*)buf, sizeof(buf));
+	buffer_create_with_existing_array(buf_buffer, (unsigned char*)buf, sizeof(buf));
 	for (i = 0; i < 26; i++) {
 		buf[0] = random[i];
 		mcJSON_AddItemToObject(sortme, buf_buffer, mcJSON_CreateNumber(1, NULL), NULL);

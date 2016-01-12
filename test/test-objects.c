@@ -70,67 +70,78 @@ int create_objects(FILE *output_file) {
 	mcJSON *fld;
 	int i;
 	/* Our "days of the week" array: */
+	buffer_create_from_string(sunday, "Sunday");
+	buffer_create_from_string(monday, "Monday");
+	buffer_create_from_string(tuesday, "Tuesday");
+	buffer_create_from_string(wednesday, "Wednesday");
+	buffer_create_from_string(thursday, "Thursday");
+	buffer_create_from_string(friday, "Friday");
+	buffer_create_from_string(saturday, "Saturday");
 	buffer_t *strings[7] = {
-		buffer_create_from_string("Sunday"),
-		buffer_create_from_string("Monday"),
-		buffer_create_from_string("Tuesday"),
-		buffer_create_from_string("Wednesday"),
-		buffer_create_from_string("Thursday"),
-		buffer_create_from_string("Friday"),
-		buffer_create_from_string("Saturday")
+		sunday,
+		monday,
+		tuesday,
+		wednesday,
+		thursday,
+		friday,
+		saturday
 	};
 	/* Our matrix: */
 	int numbers[3][3] = {{0, -1, 0}, {1, 0, 0}, {0, 0, 1}};
 	/* Our "gallery" item: */
 	int ids[4] = {116, 943, 234, 38793};
 	/* Our array of "records": */
+	buffer_create_from_string(zip_buffer, "zip");
+	buffer_create_from_string(empty_string_buffer, "");
+	buffer_create_from_string(san_francisco_buffer, "SAN FRANCISCO");
+	buffer_create_from_string(ca_buffer, "CA");
+	buffer_create_from_string(zip_number, "94107");
+	buffer_create_from_string(us_buffer, "US");
+	buffer_create_from_string(sunnyvale_buffer, "SUNNYVALE");
+	buffer_create_from_string(zip_number2, "94085");
 	struct record fields[2] = {
 		{
-			buffer_create_from_string("zip"),
+			zip_buffer,
 			37.7668,
 			-1.223959e+2,
-			buffer_create_from_string(""),
-			buffer_create_from_string("SAN FRANCISCO"),
-			buffer_create_from_string("CA"),
-			buffer_create_from_string("94107"),
-			buffer_create_from_string("US")
+			empty_string_buffer,
+			san_francisco_buffer,
+			ca_buffer,
+			zip_number,
+			us_buffer
 		},
 		{
-			buffer_create_from_string("zip"),
+			zip_buffer,
 			37.371991,
 			-1.22026e+2,
-			buffer_create_from_string(""),
-			buffer_create_from_string("SUNNYVALE"),
-			buffer_create_from_string("CA"),
-			buffer_create_from_string("94085"),
-			buffer_create_from_string("US")
+			empty_string_buffer,
+			sunnyvale_buffer,
+			ca_buffer,
+			zip_number2,
+			us_buffer
 		}
 	};
-
-	/* buffers to put string literals into */
-	buffer_t *string_literal_buffer = NULL;
-	buffer_t *name_literal_buffer = NULL;
 
 	/* Here we construct some JSON standards, from the JSON site. */
 
 	/* Our "Video" datatype: */
 	root = mcJSON_CreateObject(NULL);
-	string_literal_buffer = buffer_create_from_string("Jack (\"Bee\") Nimble");
-	name_literal_buffer = buffer_create_from_string("name");
-	mcJSON_AddItemToObject(root, name_literal_buffer, mcJSON_CreateString(string_literal_buffer, NULL), NULL);
-	name_literal_buffer = buffer_create_from_string("format");
-	mcJSON_AddItemToObject(root, name_literal_buffer, fmt=mcJSON_CreateObject(NULL), NULL);
-	name_literal_buffer = buffer_create_from_string("type");
-	string_literal_buffer = buffer_create_from_string("rect");
-	mcJSON_AddStringToObject(fmt, name_literal_buffer, string_literal_buffer, NULL);
-	name_literal_buffer = buffer_create_from_string("width");
-	mcJSON_AddNumberToObject(fmt, name_literal_buffer, 1920, NULL);
-	name_literal_buffer = buffer_create_from_string("height");
-	mcJSON_AddNumberToObject(fmt, name_literal_buffer, 1080, NULL);
-	name_literal_buffer = buffer_create_from_string("interlace");
-	mcJSON_AddFalseToObject (fmt, name_literal_buffer, NULL);
-	name_literal_buffer = buffer_create_from_string("frame rate");
-	mcJSON_AddNumberToObject(fmt, name_literal_buffer, 24, NULL);
+	buffer_create_from_string(jack_buffer, "Jack (\"Bee\") Nimble");
+	buffer_create_from_string(name_buffer, "name");
+	mcJSON_AddItemToObject(root, name_buffer, mcJSON_CreateString(jack_buffer, NULL), NULL);
+	buffer_create_from_string(format_buffer, "format");
+	mcJSON_AddItemToObject(root, format_buffer, fmt=mcJSON_CreateObject(NULL), NULL);
+	buffer_create_from_string(rect_buffer, "rect");
+	buffer_create_from_string(type_buffer, "type");
+	mcJSON_AddStringToObject(fmt, type_buffer, rect_buffer, NULL);
+	buffer_create_from_string(width_buffer, "width");
+	mcJSON_AddNumberToObject(fmt, width_buffer, 1920, NULL);
+	buffer_create_from_string(height_buffer, "height");
+	mcJSON_AddNumberToObject(fmt, height_buffer, 1080, NULL);
+	buffer_create_from_string(interlace, "interlace");
+	mcJSON_AddFalseToObject (fmt, interlace, NULL);
+	buffer_create_from_string(fps_buffer, "frame rate");
+	mcJSON_AddNumberToObject(fmt, fps_buffer, 24, NULL);
 
 	buffer_t *output = NULL;
 	/* Print to text, Delete the mcJSON, print it, release the string. */
@@ -181,27 +192,25 @@ int create_objects(FILE *output_file) {
 
 	/* Our "gallery" item: */
 	root = mcJSON_CreateObject(NULL);
-	name_literal_buffer = buffer_create_from_string("Image");
-	mcJSON_AddItemToObject(root, name_literal_buffer, img = mcJSON_CreateObject(NULL), NULL);
-	name_literal_buffer = buffer_create_from_string("Width");
-	mcJSON_AddNumberToObject(img, name_literal_buffer, 800, NULL);
-	name_literal_buffer = buffer_create_from_string("Height");
-	mcJSON_AddNumberToObject(img, name_literal_buffer, 600, NULL);
-	name_literal_buffer = buffer_create_from_string("Title");
-	string_literal_buffer = buffer_create_from_string("View from 15th Floor");
-	mcJSON_AddStringToObject(img, name_literal_buffer, string_literal_buffer, NULL);
-	name_literal_buffer = buffer_create_from_string("Thumbnail");
-	mcJSON_AddItemToObject(img, name_literal_buffer, thm = mcJSON_CreateObject(NULL), NULL);
-	name_literal_buffer = buffer_create_from_string("Url");
-	string_literal_buffer = buffer_create_from_string("http:/*www.example.com/image/481989943");
-	mcJSON_AddStringToObject(thm, name_literal_buffer, string_literal_buffer, NULL);
-	name_literal_buffer = buffer_create_from_string("Height");
-	mcJSON_AddNumberToObject(thm, name_literal_buffer, 125, NULL);
-	name_literal_buffer = buffer_create_from_string("Width");
-	string_literal_buffer = buffer_create_from_string("100");
-	mcJSON_AddStringToObject(thm, name_literal_buffer, string_literal_buffer, NULL);
-	name_literal_buffer = buffer_create_from_string("IDs");
-	mcJSON_AddItemToObject(img, name_literal_buffer, mcJSON_CreateIntArray(ids, 4, NULL), NULL);
+	buffer_create_from_string(image_buffer, "Image");
+	mcJSON_AddItemToObject(root, image_buffer, img = mcJSON_CreateObject(NULL), NULL);
+	buffer_create_from_string(Width_buffer, "Width");
+	mcJSON_AddNumberToObject(img, Width_buffer, 800, NULL);
+	buffer_create_from_string(Height_buffer, "Height");
+	mcJSON_AddNumberToObject(img, Height_buffer, 600, NULL);
+	buffer_create_from_string(title_buffer, "Title");
+	buffer_create_from_string(view_buffer, "View from 15th Floor");
+	mcJSON_AddStringToObject(img, title_buffer, view_buffer, NULL);
+	buffer_create_from_string(thumbnail_buffer, "Thumbnail");
+	mcJSON_AddItemToObject(img, thumbnail_buffer, thm = mcJSON_CreateObject(NULL), NULL);
+	buffer_create_from_string(url_buffer, "Url");
+	buffer_create_from_string(url, "http:/*www.example.com/image/481989943");
+	mcJSON_AddStringToObject(thm, url_buffer, url, NULL);
+	mcJSON_AddNumberToObject(thm, Height_buffer, 125, NULL);
+	buffer_create_from_string(hundred_buffer, "100");
+	mcJSON_AddStringToObject(thm, Width_buffer, hundred_buffer, NULL);
+	buffer_create_from_string(ids_buffer, "IDs");
+	mcJSON_AddItemToObject(img, ids_buffer, mcJSON_CreateIntArray(ids, 4, NULL), NULL);
 
 	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
@@ -219,22 +228,22 @@ int create_objects(FILE *output_file) {
 	root = mcJSON_CreateArray(NULL);
 	for (i = 0; i < 2; i++) {
 		mcJSON_AddItemToArray(root, fld = mcJSON_CreateObject(NULL), NULL);
-		name_literal_buffer = buffer_create_from_string("precision");
-		mcJSON_AddStringToObject(fld, name_literal_buffer, fields[i].precision, NULL);
-		name_literal_buffer = buffer_create_from_string("Latitude");
-		mcJSON_AddNumberToObject(fld, name_literal_buffer, fields[i].lat, NULL);
-		name_literal_buffer = buffer_create_from_string("Longitude");
-		mcJSON_AddNumberToObject(fld, name_literal_buffer, fields[i].lon, NULL);
-		name_literal_buffer = buffer_create_from_string("Address");
-		mcJSON_AddStringToObject(fld, name_literal_buffer, fields[i].address, NULL);
-		name_literal_buffer = buffer_create_from_string("City");
-		mcJSON_AddStringToObject(fld, name_literal_buffer, fields[i].city, NULL);
-		name_literal_buffer = buffer_create_from_string("State");
-		mcJSON_AddStringToObject(fld, name_literal_buffer, fields[i].state, NULL);
-		name_literal_buffer = buffer_create_from_string("Zip");
-		mcJSON_AddStringToObject(fld, name_literal_buffer, fields[i].zip, NULL);
-		name_literal_buffer = buffer_create_from_string("Country");
-		mcJSON_AddStringToObject(fld, name_literal_buffer, fields[i].country, NULL);
+		buffer_create_from_string(precision_buffer, "precision");
+		mcJSON_AddStringToObject(fld, precision_buffer, fields[i].precision, NULL);
+		buffer_create_from_string(latitude_buffer, "Latitude");
+		mcJSON_AddNumberToObject(fld, latitude_buffer, fields[i].lat, NULL);
+		buffer_create_from_string(longitude_buffer, "Longitude");
+		mcJSON_AddNumberToObject(fld, longitude_buffer, fields[i].lon, NULL);
+		buffer_create_from_string(address_buffer, "Address");
+		mcJSON_AddStringToObject(fld, address_buffer, fields[i].address, NULL);
+		buffer_create_from_string(city_buffer, "City");
+		mcJSON_AddStringToObject(fld, city_buffer, fields[i].city, NULL);
+		buffer_create_from_string(state_buffer, "State");
+		mcJSON_AddStringToObject(fld, state_buffer, fields[i].state, NULL);
+		buffer_create_from_string(zip_buffer, "Zip");
+		mcJSON_AddStringToObject(fld, zip_buffer, fields[i].zip, NULL);
+		buffer_create_from_string(country_buffer, "Country");
+		mcJSON_AddStringToObject(fld, country_buffer, fields[i].country, NULL);
 	}
 
 	/*	mcJSON_ReplaceItemInObject(mcJSON_GetArrayItem(root,1),"City",mcJSON_CreateIntArray(ids,4,NULL)); */
@@ -251,8 +260,8 @@ int create_objects(FILE *output_file) {
 	buffer_destroy_from_heap(output);
 
 	root = mcJSON_CreateObject(NULL);
-	name_literal_buffer = buffer_create_from_string("number");
-	mcJSON_AddNumberToObject(root, name_literal_buffer, INFINITY, NULL);
+	buffer_create_from_string(number_buffer, "number");
+	mcJSON_AddNumberToObject(root, number_buffer, INFINITY, NULL);
 
 	output = mcJSON_Print(root);
 	mcJSON_Delete(root);
@@ -267,10 +276,10 @@ int create_objects(FILE *output_file) {
 
 	/* Check mcJSON_GetObjectItem and make sure it's case sensitive */
 	root = mcJSON_CreateObject(NULL);
-	name_literal_buffer = buffer_create_from_string("a");
-	mcJSON_AddNumberToObject(root, name_literal_buffer, 1, NULL);
-	name_literal_buffer = buffer_create_from_string("A");
-	mcJSON_AddNumberToObject(root, name_literal_buffer, 2, NULL);
+	buffer_create_from_string(a_buffer, "a");
+	mcJSON_AddNumberToObject(root, a_buffer, 1, NULL);
+	buffer_create_from_string(A_buffer, "A");
+	mcJSON_AddNumberToObject(root, A_buffer, 2, NULL);
 
 	output = mcJSON_Print(root);
 	if (output == NULL) {
@@ -283,10 +292,8 @@ int create_objects(FILE *output_file) {
 	}
 	buffer_destroy_from_heap(output);
 
-	name_literal_buffer = buffer_create_from_string("a");
-	mcJSON *one = mcJSON_GetObjectItem(root, name_literal_buffer);
-	name_literal_buffer = buffer_create_from_string("A");
-	mcJSON *two = mcJSON_GetObjectItem(root, name_literal_buffer);
+	mcJSON *one = mcJSON_GetObjectItem(root, a_buffer);
+	mcJSON *two = mcJSON_GetObjectItem(root, A_buffer);
 	if ((one == NULL) || (one->valueint != 1)
 			|| (two == NULL) || (two->valueint != 2)) {
 		fprintf(stderr, "ERROR: Failed to get item from object.\n");
@@ -295,7 +302,8 @@ int create_objects(FILE *output_file) {
 	mcJSON_Delete(root);
 
 	/* test creation of hex strings */
-	root = mcJSON_CreateHexString(buffer_create_from_string("\r\n"), NULL);
+	buffer_create_from_string(newline_buffer, "\r\n");
+	root = mcJSON_CreateHexString(newline_buffer, NULL);
 	if (root == NULL) {
 		return EXIT_FAILURE;
 	}
@@ -344,7 +352,7 @@ int main (int argc, char **argv) {
 
 	/* Process each json textblock by parsing, then rebuilding: */
 	for (size_t i = 0; i < (sizeof(json) / sizeof(char*)); i++) {
-		buffer_t *json_buffer = buffer_create_with_existing_array((unsigned char*)json[i], strlen(json[i]) + 1);
+		buffer_create_with_existing_array(json_buffer, (unsigned char*)json[i], strlen(json[i]) + 1);
 		int status = doit(json_buffer, output_file);
 		if (status == 0) {
 			fprintf(stderr, "ERROR: Failed on text %zu!\n", i);
