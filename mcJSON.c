@@ -195,7 +195,11 @@ static buffer_t *parse_number(mcJSON * const item, buffer_t * const input) {
 	input->position = ((unsigned char*)end_pointer) - input->content;
 
 	item->valuedouble = number;
-	item->valueint = (int)number;
+	if ((number <= INT_MAX) && (number >= INT_MIN)) {
+		item->valueint = (int)number;
+	} else {
+		item->valueint = 0;
+	}
 	item->type = mcJSON_Number;
 
 	return input;
