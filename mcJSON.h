@@ -52,13 +52,13 @@ extern "C"
 
 /* mcJSON Types: */
 typedef enum mcJSON_Type {
-	mcJSON_False = 0,
-	mcJSON_True = 1,
-	mcJSON_NULL = 2,
-	mcJSON_Number = 3,
-	mcJSON_String = 4,
-	mcJSON_Array = 5,
-	mcJSON_Object = 6
+	mcJSON_False = (1 << 0),
+	mcJSON_True = (1 << 1),
+	mcJSON_NULL = (1 << 2),
+	mcJSON_Number = (1 << 3),
+	mcJSON_String = (1 << 4),
+	mcJSON_Array = (1 << 5),
+	mcJSON_Object = (1 << 6)
 } mcJSON_Type;
 
 /* alias buffer_t to mempool_t, the mempool_t type defines a contiguous
