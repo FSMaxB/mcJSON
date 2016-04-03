@@ -26,7 +26,7 @@ else ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
         #TODO: Find secure Linker flags that work on Mac OS X
     else(APPLE)
         set(SECURITY_C_FLAGS "-fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -O1 -Wformat -Wformat-security")
-        set(SECURITY_LINK_FLAGS "-z relro,now,noexecstack,noexecheap -pie")
+        set(SECURITY_LINK_FLAGS "-z relro -z now -z noexecstack -z noexecheap -pie")
     endif(APPLE)
 endif ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
 
