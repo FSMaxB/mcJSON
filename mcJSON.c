@@ -571,8 +571,8 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 			/* additional space for '\\' needed */
 			additional_characters++;
 		} else if (string->content[string->position] < 32) {
-			/* "\\uXXXX" -> 5 additional characters */
-			additional_characters += 5;
+			/* "\\uXXXX" -> 6 additional characters */
+			additional_characters += 6;
 		}
 	}
 
@@ -666,7 +666,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 						return NULL;
 					}
 					snprintf((char*)output->content + output->position, 6, "u%04x", string->content[string->position]);
-					output->position += 4; /* not +5 because the loop does this for us. */
+					output->position += 5; /* not +6 because the loop does this for us. */
 					break;
 			}
 		}
