@@ -2,16 +2,18 @@
 [ ! -e build ] && mkdir build
 RETURN_VALUE=0
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug
+if cmake ..; then
+    # This has to be done with else because with '!' it won't work on Mac OS X
+    echo
+else
+    exit $? #abort on failure
+fi
 make clean
-make
-if [ ! $? -eq 0 ]; then
-    echo Build failed
-    RETURN_VALUE=1
+if make; then
+    # This has to be done with else because with '!' it won't work on Mac OS X
+    echo
+else
+    exit $? #abort on failure
 fi
+export CTEST_OUTPUT_ON_FAILURE=1
 make test
-if [ ! $? -eq 0 ]; then
-    echo Tests failed
-    RETURN_VALUE=1
-fi
-exit $RETURN_VALUE
