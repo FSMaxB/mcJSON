@@ -1051,7 +1051,7 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 
 	/* Retrieve all the results: */
 	mcJSON *child = item->child;
-	size_t length = 0;
+	size_t length = 2; /* "[]" */
 	bool fail = false;
 	for (size_t i = 0; (i < item->length) && (child != NULL) && !fail; child = child->next, i++) {
 		entries[i] = print_value(child, depth + 1, format, NULL);
