@@ -355,14 +355,14 @@ static buffer_t *print_number(mcJSON * const item, buffer_t * const buffer) {
 }
 
 /* parse a 4 character hexadecimal number, return INT_MAX on failure */
-static unsigned int parse_hex4(buffer_t * const input) {
+static uint32_t parse_hex4(buffer_t * const input) {
 	if ((input->position + 4) >= input->content_length) {
-		return INT_MAX;
+		return UINT_MAX;
 	}
-	unsigned int number;
+	uint32_t number;
 	size_t characters_read = sscanf("%4x", (char*)input->content + input->position, &number);
 	if (characters_read != 4) {
-		return INT_MAX;
+		return UINT_MAX;
 	}
 	input->position += characters_read;
 
@@ -422,66 +422,97 @@ static buffer_t *parse_string(mcJSON * const item, buffer_t * const input, mempo
 				case 't':
 					value_out->content[value_out->position] = '\t';
 					break;
-				case 'u': {/* transcode utf16 to utf8. */
-						/* FIXME: I don't quite understand this code yet, therefore I can't refactor it */
+				case 'u': {/* transcode utf16 to utf8. See RFC 2781 and RFC 3629 */
 						if ((input->position + 4) >= input->content_length) {
 							parsebuffer_deallocate(value_out, pool);
 							return NULL;
 						}
-						unsigned uc;
-						unsigned uc2;
-						input->position++;
-						uc = parse_hex4(input) /* get the unicode char. */;
-						input->position += 4;
 
-						if (((uc >= 0xDC00) && (uc <= 0xDFFF)) || (uc == 0)) { /* check for invalid */
-							break;
+						/* valid hex digit following '\u'? */
+						if ((!isxdigit(input->content[input->position + 1])) || (!isxdigit(input->content[input->position + 2])) || (!isxdigit(input->content[input->position + 3])) || (!isxdigit(input->content[input->position + 4]))) {
+							parsebuffer_deallocate(value_out, pool);
+							return NULL;
 						}
 
-						if ((uc >= 0xD800) && (uc<=0xDBFF)) { /* UTF16 surrogate pairs. */
-							if ((input->content[input->position + 1] != '\\') || (input->content[input->position + 2] != 'u')) { /* missing second-half of surrogate. */
-								break;
-							}
+						input->position++;
+						uint32_t unicode = parse_hex4(input);
+						input->position += 4;
+						uint32_t low_surrogate = UINT_MAX;
+						if (unicode == UINT_MAX) {
+							parsebuffer_deallocate(value_out, pool);
+							return NULL;
+						}
+
+						/* invalid characters, only valid for low half surrogate */
+						if ((unicode >= 0xDC00) && (unicode <= 0xDFFF)) {
+							parsebuffer_deallocate(value_out, pool);
+						}
+
+						/* UTF-16 surrogate pair? */
+						if ((unicode >= 0xD800) && (unicode <= 0xDBFF)) {
 							if ((input->position + 6) >= input->content_length) {
 								parsebuffer_deallocate(value_out, pool);
 								return NULL;
 							}
-							uc2 = parse_hex4(input);
-							if ((uc2 < 0xDC00) || (uc2 > 0xDFFF)) { /* invalid second-half of surrogate. */
-								break;
+
+							/* valid \uxxxx ? */
+							if ((input->content[input->position] != '\\') || (input->content[input->position + 1] != 'u') || (!isxdigit(input->content[input->position + 2])) || (!isxdigit(input->content[input->position + 3])) || (!isxdigit(input->content[input->position + 4])) || (!isxdigit(input->content[input->position + 5]))) {
+								parsebuffer_deallocate(value_out, pool);
+								return NULL;
 							}
-							uc = 0x10000 + (((uc & 0x3FF) << 10) | (uc2 & 0x3FF));
+
+							input->position += 2;
+							low_surrogate = parse_hex4(input);
+							input->position += 4;
+
+							/* invalid low surrogate */
+							if ((low_surrogate < 0xDC00) || (low_surrogate > 0xDFFF)) {
+								parsebuffer_deallocate(value_out, pool);
+								return NULL;
+							}
+
+							/* get the last ten bits of both surrogates, concatenate them and add 65536 */
+							unicode = 0x10000 + (((unicode & 0x3FF) << 10) | (low_surrogate & 0x3FF));
 						}
 
-						length = 4;
-						if (uc < 0x80) {
+						length = 0;
+						if (unicode < 0x80) { /* ASCII */
 							length = 1;
-						} else if (uc < 0x800) {
+						} else if (unicode < 0x800) { /* at most 11 bits -> 2 bytes */
 							length = 2;
-						} else if (uc < 0x10000) {
+						} else if (unicode < 0x10000) { /* at most 16 bits -> 3 bytes */
 							length = 3;
-							value_out->position += length;
+						} else if (unicode < 0x200000) { /* at most 21 bits -> 4 bytes */
+							length = 4;
+						} else { /* invalid */
+							parsebuffer_deallocate(value_out, pool);
+							return NULL;
 						}
 
-						static const unsigned char firstByteMark[7] = {0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC};
+						value_out->position += length;
+
+						static const unsigned char firstByteMark[7] = {0x00, 0x00, 0xC0, 0xE0, 0xF0};
 						switch (length) {
 							case 4:
 								value_out->position--;
-								value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
-								uc >>= 6;
+								/* lowest 6 bit preceeded by '10' */
+								value_out->content[value_out->position] = ((unicode | 0x80) & 0xBF);
+								unicode >>= 6;
 							case 3:
 								value_out->position--;
-								value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
-								uc >>= 6;
+								/* next 6 bit preceeded by '10' */
+								value_out->content[value_out->position] = ((unicode | 0x80) & 0xBF);
+								unicode >>= 6;
 							case 2:
 								value_out->position--;
-								value_out->content[value_out->position] = ((uc | 0x80) & 0xBF);
-								uc >>= 6;
+								/* next 6 bit preceeded by '10' */
+								value_out->content[value_out->position] = ((unicode | 0x80) & 0xBF);
+								unicode >>= 6;
 							case 1:
 								value_out->position--;
-								value_out->content[value_out->position] = (uc | firstByteMark[length]);
+								value_out->content[value_out->position] = (unicode | firstByteMark[length]);
 						}
-						value_out->position += length - 1;
+						value_out->position += length;
 					}
 					break;
 				default:
@@ -540,8 +571,8 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 			/* additional space for '\\' needed */
 			additional_characters++;
 		} else if (string->content[string->position] < 32) {
-			/* "\\uXXXX" -> 5 additional characters */
-			additional_characters += 5;
+			/* "\\uXXXX" -> 6 additional characters */
+			additional_characters += 6;
 		}
 	}
 
@@ -635,7 +666,7 @@ static buffer_t *print_string_ptr(buffer_t * const string, buffer_t * const buff
 						return NULL;
 					}
 					snprintf((char*)output->content + output->position, 6, "u%04x", string->content[string->position]);
-					output->position += 4; /* not +5 because the loop does this for us. */
+					output->position += 5; /* not +6 because the loop does this for us. */
 					break;
 			}
 		}
@@ -1020,7 +1051,7 @@ static buffer_t *print_array(mcJSON * const item, const size_t depth, const bool
 
 	/* Retrieve all the results: */
 	mcJSON *child = item->child;
-	size_t length = 0;
+	size_t length = 2; /* "[]" */
 	bool fail = false;
 	for (size_t i = 0; (i < item->length) && (child != NULL) && !fail; child = child->next, i++) {
 		entries[i] = print_value(child, depth + 1, format, NULL);
