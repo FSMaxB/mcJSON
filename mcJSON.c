@@ -475,7 +475,6 @@ static buffer_t *parse_string(mcJSON * const item, buffer_t * const input, mempo
 							unicode = 0x10000 + (((unicode & 0x3FF) << 10) | (low_surrogate & 0x3FF));
 						}
 
-						length = 0;
 						if (unicode < 0x80) { /* ASCII */
 							length = 1;
 						} else if (unicode < 0x800) { /* at most 11 bits -> 2 bytes */
