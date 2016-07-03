@@ -17,4 +17,4 @@ Features/Differences in comparison with cJSON:
 * Buffered parsing (allocate one big continuous chunk of memory and parse the entire JSON tree into it)
 * Arrays and objects know their own length (getting the size has O(1) complexity )
 
-mcJSON ist licensed under LGPL2.1 or later.
+mcJSON is licensed under the ISC license.
