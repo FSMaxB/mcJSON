@@ -122,7 +122,7 @@ void *allocate(const size_t size, mempool_t * const pool) {
 	}
 
 	//determine the amount of padding for proper alignment
-	size_t alignment = get_alignment(); //alignment needed for this processor
+	size_t alignment = ALIGNMENT_OF(intmax_t); //alignment needed for this processor
 	size_t padding = 0; //padding needed to fit alignment
 	if (alignment != 0) {
 		unsigned char* start_position = pool->content + pool->position; //set start_position to current position in the mempool
