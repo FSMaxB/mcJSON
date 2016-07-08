@@ -57,64 +57,7 @@
 static void *(*mcJSON_malloc)(size_t sz) = malloc;
 static void (*mcJSON_free)(void *ptr) = free;
 
-/*
- * Implementation of the greatest common divisor using the
- * euclidean algorithm.
- */
-size_t gcd(size_t a, size_t b) {
-	while (b != 0) {
-		size_t t = b;
-		b = a % b;
-		a = t;
-	}
-
-	return a;
-}
-
-/*
- * least common multiple.
- */
-size_t lcm(size_t a, size_t b) {
-	if ((a == 0) && (b == 0)) {
-		return 0;
-	}
-
-	return (a * b) / gcd(a, b);
-}
-
 #define ALIGNMENT_OF(type) offsetof( struct { char c; type t; }, t )
-
-/*
- * Return the alignment to use for manual memory allocation.
- *
- * This is the least common multiple of the offsets for
- * double, void*, int, size_t and mcJSON
- *
- * The assumption is, that the alignment that the compiler does
- * in a struct is identical to the alignment that's needed when allocating
- * arbitrary memory.
- *
- * The Alignment is necessary to make memory allocation work on
- * processors that only allow aligned access.
- */
-size_t get_alignment() {
-	static size_t alignment = SIZE_MAX;
-
-	if (alignment != SIZE_MAX) {
-		//calculate alignment only once, after that just return it's value
-		return alignment;
-	}
-
-	size_t int_alignment = ALIGNMENT_OF(int);
-	size_t double_alignment = ALIGNMENT_OF(double);
-	size_t size_t_alignment = ALIGNMENT_OF(size_t);
-	size_t mcJSON_alignment = ALIGNMENT_OF(mcJSON);
-	size_t void_star_alignment = ALIGNMENT_OF(void*);
-
-	alignment = lcm(lcm(void_star_alignment, lcm(int_alignment, double_alignment)), lcm(size_t_alignment, mcJSON_alignment));
-
-	return alignment;
-}
 
 void *allocate(const size_t size, mempool_t * const pool) {
 	if (pool == NULL) { /* no mempool is used, do normal malloc */
